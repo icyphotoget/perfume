@@ -1,38 +1,22 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
-import { vibes, products } from "@/lib/data";
+import { motion } from "framer-motion";
+import { products } from "@/lib/data";
 
 const pageVariants = {
   initial: { opacity: 0, y: 20, scale: 0.98 },
   animate: { opacity: 1, y: 0, scale: 1 }
 };
 
-const tabVariants = {
-  initial: { opacity: 0, y: 10 },
-  animate: { opacity: 1, y: 0 }
-};
-
-const tabs = [
-  { id: "aesthetic", label: "Aesthetic sections" },
-  { id: "seasonal", label: "Seasonal vibes" },
-  { id: "feels", label: "In my feels / mood" }
-];
-
 export default function HomePage() {
-  const [activeTab, setActiveTab] = useState<"aesthetic" | "seasonal" | "feels">(
-    "aesthetic"
-  );
-
   const featured = products[0];
   const newIn = products.slice(1); // mock "new in"
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 md:py-10">
       {/* HEADER */}
-      <header className="flex items-center justify-between mb-6 md:mb-8">
+      <header className="flex items-center justify-between mb-4 md:mb-6">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-full bg-gradient-to-br from-amberLux to-softGold shadow-lux-soft" />
           <span className="text-sm tracking-[0.25em] uppercase text-slate-300">
@@ -55,6 +39,30 @@ export default function HomePage() {
         </nav>
       </header>
 
+      {/* THREE MAIN BUTTONS UNDER NAVBAR */}
+      <section className="mb-6 md:mb-8">
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/aesthetic"
+            className="text-xs md:text-sm px-3 md:px-4 py-1.5 rounded-3xl border border-slate-700 text-slate-300 hover:border-amberLux hover:text-amberLux bg-fog/60 transition"
+          >
+            Aesthetic sections
+          </Link>
+          <Link
+            href="/seasonal"
+            className="text-xs md:text-sm px-3 md:px-4 py-1.5 rounded-3xl border border-slate-700 text-slate-300 hover:border-amberLux hover:text-amberLux bg-fog/60 transition"
+          >
+            Seasonal vibes
+          </Link>
+          <Link
+            href="/feels"
+            className="text-xs md:text-sm px-3 md:px-4 py-1.5 rounded-3xl border border-slate-700 text-slate-300 hover:border-amberLux hover:text-amberLux bg-fog/60 transition"
+          >
+            In my feels / mood
+          </Link>
+        </div>
+      </section>
+
       <motion.main
         variants={pageVariants}
         initial="initial"
@@ -62,7 +70,7 @@ export default function HomePage() {
         transition={{ duration: 0.45, ease: "easeOut" }}
         className="space-y-8 md:space-y-10"
       >
-        {/* HERO / HEADER TEXT */}
+        {/* FRONT PAGE TEXT (hero) */}
         <section className="space-y-4 md:space-y-5">
           <p className="text-xs uppercase tracking-[0.24em] text-slate-500">
             Front page
@@ -74,137 +82,15 @@ export default function HomePage() {
             </span>
           </h1>
           <p className="text-sm md:text-base text-slate-400 max-w-2xl">
-            Switch between aesthetics, seasonal moods and pure “in my feels”
-            vibes. Underneath, your AI segment, featured fragrance of the week,
-            new arrivals and slow-perfume editorial content.
+            Use the buttons above to deep-dive into aesthetic sections, seasonal
+            vibes or pure “in my feels” moods. Below, your AI segment, featured
+            fragrance of the week, new arrivals and editorial content.
           </p>
-        </section>
-
-        {/* TABS */}
-        <section className="space-y-4">
-          <div className="flex flex-wrap gap-2 border-b border-slate-800 pb-2">
-            {tabs.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() =>
-                  setActiveTab(tab.id as "aesthetic" | "seasonal" | "feels")
-                }
-                className={`relative text-xs md:text-sm px-3 md:px-4 py-1.5 rounded-3xl border transition ${
-                  activeTab === tab.id
-                    ? "border-amberLux text-amberLux bg-fog/70"
-                    : "border-slate-700 text-slate-400 hover:border-amberLux/60 hover:text-amberLux"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          {/* TAB CONTENT */}
-          <div className="mt-2">
-            <AnimatePresence mode="wait">
-              {activeTab === "aesthetic" && (
-                <motion.div
-                  key="aesthetic"
-                  variants={tabVariants}
-                  initial="initial"
-                  animate="animate"
-                  exit={{ opacity: 0, y: 10 }}
-                  transition={{ duration: 0.25 }}
-                  className="grid md:grid-cols-3 gap-4"
-                >
-                  {/* Aesthetic sections – each different layout */}
-                  <AestheticCard
-                    title="Dark Academia"
-                    subtitle="Ink, mahogany shelves, late-night study sessions."
-                    badge="Aesthetic section"
-                  />
-                  <AestheticCard
-                    title="Old Money Weekend"
-                    subtitle="Camel coats, heirloom cashmere and quiet countryside estates."
-                    badge="Aesthetic section"
-                  />
-                  <AestheticCard
-                    title="Minimal Future"
-                    subtitle="Cold glass, skin scents, soft techno and gallery lighting."
-                    badge="Aesthetic section"
-                  />
-                </motion.div>
-              )}
-
-              {activeTab === "seasonal" && (
-                <motion.div
-                  key="seasonal"
-                  variants={tabVariants}
-                  initial="initial"
-                  animate="animate"
-                  exit={{ opacity: 0, y: 10 }}
-                  transition={{ duration: 0.25 }}
-                  className="grid md:grid-cols-4 gap-3 md:gap-4"
-                >
-                  <SeasonCard
-                    season="Spring Bloom"
-                    note="Fresh florals, soft greens, rainy sidewalks."
-                  />
-                  <SeasonCard
-                    season="Summer Heat"
-                    note="Solar skin, salt, citrus, sweaty nightlife."
-                  />
-                  <SeasonCard
-                    season="Autumn Smoke"
-                    note="Spice, woods, leather, golden-hour melancholy."
-                  />
-                  <SeasonCard
-                    season="Winter Velvet"
-                    note="Resins, incense, cashmere and candlelight."
-                  />
-                </motion.div>
-              )}
-
-              {activeTab === "feels" && (
-                <motion.div
-                  key="feels"
-                  variants={tabVariants}
-                  initial="initial"
-                  animate="animate"
-                  exit={{ opacity: 0, y: 10 }}
-                  transition={{ duration: 0.25 }}
-                  className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4"
-                >
-                  {vibes.map(vibe => (
-                    <Link
-                      key={vibe.slug}
-                      href={`/vibe/${vibe.slug}`}
-                      className="relative group rounded-3xl overflow-hidden bg-fog/70 border border-slate-800/80 p-3 md:p-4 flex flex-col justify-between shadow-lux-soft/40 hover:border-amberLux/60 hover:shadow-lux-soft transition"
-                    >
-                      <div className="relative z-10 space-y-1 text-left">
-                        <p className="text-[0.65rem] uppercase tracking-[0.2em] text-slate-400">
-                          Mood
-                        </p>
-                        <h3 className="text-sm md:text-base font-medium text-slate-50">
-                          {vibe.name}
-                        </h3>
-                        <p className="hidden md:block text-[0.7rem] text-slate-400">
-                          {vibe.tagline}
-                        </p>
-                      </div>
-                      <div className="relative z-10 mt-3 flex items-center justify-between text-[0.65rem] text-slate-400">
-                        <span>See perfumes</span>
-                        <span className="text-amberLux group-hover:translate-x-0.5 transition">
-                          →
-                        </span>
-                      </div>
-                    </Link>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
         </section>
 
         {/* AI SEGMENT */}
         <section className="grid md:grid-cols-[3fr,2.2fr] gap-5 items-start">
-          <motion.div className="space-y-3">
+          <div className="space-y-3">
             <p className="text-xs uppercase tracking-[0.24em] text-slate-500">
               AI segment
             </p>
@@ -240,7 +126,6 @@ export default function HomePage() {
                       </span>
                     </div>
                     <div className="flex items-center gap-1 text-amberLux text-sm">
-                      {/* rating UI – non-functional for now */}
                       {Array.from({ length: 5 }).map((_, i) => (
                         <span
                           key={i}
@@ -264,14 +149,10 @@ export default function HomePage() {
                 Start / redo AI recommendations
               </Link>
             </div>
-          </motion.div>
+          </div>
 
-          {/* SIDE SUMMARY CARD */}
-          <motion.div
+          <div
             className="relative rounded-3xl bg-gradient-to-br from-fog via-slate-900 to-black p-4 md:p-6 shadow-lux-soft overflow-hidden"
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
           >
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(248,191,119,0.24),_transparent_60%)] opacity-80" />
             <div className="relative space-y-3">
@@ -288,7 +169,7 @@ export default function HomePage() {
                 actually remembers how you felt last winter.
               </p>
             </div>
-          </motion.div>
+          </div>
         </section>
 
         {/* FEATURED PERFUME + NEW IN + EDITORIAL */}
@@ -384,7 +265,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Featured reviews – like newspaper quotes */}
+          {/* Featured reviews */}
           <div className="space-y-3">
             <h2 className="text-sm md:text-base uppercase tracking-[0.22em] text-slate-400">
               Featured reviews
@@ -418,50 +299,6 @@ export default function HomePage() {
           </div>
         </section>
       </motion.main>
-    </div>
-  );
-}
-
-/* --- small helper components --- */
-
-function AestheticCard({
-  title,
-  subtitle,
-  badge
-}: {
-  title: string;
-  subtitle: string;
-  badge: string;
-}) {
-  return (
-    <div className="rounded-3xl bg-fog/80 border border-slate-800 p-4 flex flex-col justify-between shadow-lux-soft/40">
-      <div className="space-y-2">
-        <span className="inline-flex px-2 py-1 rounded-full bg-slate-950/70 border border-slate-700 text-[0.6rem] uppercase tracking-[0.2em] text-slate-400">
-          {badge}
-        </span>
-        <h3 className="text-sm md:text-base text-slate-50">{title}</h3>
-        <p className="text-xs md:text-sm text-slate-400">{subtitle}</p>
-      </div>
-      <p className="mt-3 text-[0.7rem] text-slate-500">
-        In production this becomes a dedicated landing page with its own
-        curated perfumes, imagery and micro-editorial.
-      </p>
-    </div>
-  );
-}
-
-function SeasonCard({ season, note }: { season: string; note: string }) {
-  return (
-    <div className="rounded-3xl bg-slate-950/70 border border-slate-800 p-3 flex flex-col justify-between shadow-lux-soft/30">
-      <div className="space-y-1">
-        <p className="text-[0.65rem] uppercase tracking-[0.22em] text-slate-500">
-          {season}
-        </p>
-        <p className="text-xs text-slate-300">{note}</p>
-      </div>
-      <p className="mt-2 text-[0.7rem] text-slate-500">
-        Later: filter view showing scents that fit this season.
-      </p>
     </div>
   );
 }

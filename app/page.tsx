@@ -1,304 +1,457 @@
 "use client";
 
+import {
+  motion,
+  useScroll,
+  useTransform,
+  useInView
+} from "framer-motion";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 import { products } from "@/lib/data";
 
-const pageVariants = {
-  initial: { opacity: 0, y: 20, scale: 0.98 },
-  animate: { opacity: 1, y: 0, scale: 1 }
+// simple smoothing for scroll velocity
+function smooth(prev: number, next: number, factor = 0.08) {
+  return prev + (next - prev) * factor;
+}
+
+type ScrollDirection = "up" | "down";
+
+type SlideBaseProps = {
+  index: number;
+  total: number;
+  title: string;
+  subtitle?: string;
+  description?: string;
+  imageUrl: string;
+  children?: React.ReactNode;
+  scrollVelocity: number;
+  scrollDirection: ScrollDirection;
+  onActive: (index: number) => void;
 };
 
-export default function HomePage() {
-  const featured = products[0];
-  const newIn = products.slice(1); // mock "new in"
+/**
+ * Jedna "scene" / slide:
+ * - full-screen (h-screen)
+ * - background image s laganim parallax + zoom
+ * - fade overlay
+ * - Apple-style direction-aware content motion
+ */
+function SlideScene({
+  index,
+  total,
+  title,
+  subtitle,
+  description,
+  imageUrl,
+  children,
+  scrollVelocity,
+  scrollDirection,
+  onActive
+}: SlideBaseProps) {
+  const ref = useRef<HTMLElement | null>(null);
+
+  const inView = useInView(ref, { margin: "-30% 0px -30% 0px" });
+  useEffect(() => {
+    if (inView) onActive(index);
+  }, [inView, index, onActive]);
+
+  // scroll progress samo za ovaj slide
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"]
+  });
+
+  const bgY = useTransform(scrollYProgress, [0, 1], ["-6%", "4%"]);
+  const fadeOverlay = useTransform(
+    scrollYProgress,
+    [0, 0.5, 1],
+    [0.7, 0.25, 0.7]
+  );
+
+  // lagani zoom ovisno o velocityju iz roditelja
+  const [bgScale, setBgScale] = useState(1);
+  useEffect(() => {
+    const zoomAmount = Math.min(Math.abs(scrollVelocity) * 0.02, 0.05);
+    setBgScale(1 + zoomAmount);
+  }, [scrollVelocity]);
+
+  const yDown = useTransform(scrollYProgress, [0, 0.4], ["16%", "0%"]);
+  const yUp = useTransform(scrollYProgress, [0, 0.4], ["-16%", "0%"]);
+
+  const clipPath = useTransform(
+    scrollYProgress,
+    [0, 0.25, 0.7, 1],
+    [
+      "inset(100% 0% 0% 0%)",
+      "inset(0% 0% 0% 0%)",
+      "inset(0% 0% 0% 0%)",
+      "inset(0% 0% 100% 0%)"
+    ]
+  );
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6 md:py-10">
-      {/* HEADER */}
-      <header className="flex items-center justify-between mb-4 md:mb-6">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-amberLux to-softGold shadow-lux-soft" />
-          <span className="text-sm tracking-[0.25em] uppercase text-slate-300">
-            Parfemi
-          </span>
-        </div>
-        <nav className="hidden md:flex items-center gap-6 text-xs uppercase text-slate-400">
-          <Link
-            href="/"
-            className="hover:text-amberLux transition text-amberLux"
-          >
-            Home
-          </Link>
-          <Link href="/quiz" className="hover:text-amberLux transition">
-            AI Scent Stylist
-          </Link>
-          <Link href="/checkout" className="hover:text-amberLux transition">
-            Cart
-          </Link>
-        </nav>
-      </header>
+    <section
+      ref={ref}
+      data-scene={index}
+      className="relative h-screen w-full flex items-center justify-center"
+    >
+      {/* background image */}
+      <motion.div
+        style={{
+          y: bgY,
+          scale: bgScale,
+          backgroundImage: `url(${imageUrl})`
+        }}
+        className="absolute inset-0 bg-cover bg-center will-change-transform"
+      />
 
-      {/* THREE MAIN BUTTONS UNDER NAVBAR */}
-      <section className="mb-6 md:mb-8">
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href="/aesthetic"
-            className="text-xs md:text-sm px-3 md:px-4 py-1.5 rounded-3xl border border-slate-700 text-slate-300 hover:border-amberLux hover:text-amberLux bg-fog/60 transition"
-          >
-            Aesthetic sections
-          </Link>
-          <Link
-            href="/seasonal"
-            className="text-xs md:text-sm px-3 md:px-4 py-1.5 rounded-3xl border border-slate-700 text-slate-300 hover:border-amberLux hover:text-amberLux bg-fog/60 transition"
-          >
-            Seasonal vibes
-          </Link>
-          <Link
-            href="/feels"
-            className="text-xs md:text-sm px-3 md:px-4 py-1.5 rounded-3xl border border-slate-700 text-slate-300 hover:border-amberLux hover:text-amberLux bg-fog/60 transition"
-          >
-            In my feels / mood
-          </Link>
-        </div>
-      </section>
+      {/* overlay */}
+      <motion.div
+        style={{ opacity: fadeOverlay }}
+        className="absolute inset-0 bg-black pointer-events-none"
+      />
 
-      <motion.main
-        variants={pageVariants}
-        initial="initial"
-        animate="animate"
-        transition={{ duration: 0.45, ease: "easeOut" }}
-        className="space-y-8 md:space-y-10"
+      {/* content */}
+      <motion.div
+        style={{
+          y: scrollDirection === "down" ? yDown : yUp,
+          clipPath
+        }}
+        transition={{
+          type: "tween",
+          ease: [0.23, 0.86, 0.32, 0.99],
+          duration: 0.6
+        }}
+        className="relative z-10 max-w-3xl mx-auto px-6 py-10 md:py-16 text-center space-y-4 md:space-y-5 bg-black/40 backdrop-blur-xl rounded-[2.5rem] border border-white/10 shadow-[0_40px_120px_rgba(0,0,0,0.9)]"
       >
-        {/* FRONT PAGE TEXT (hero) */}
-        <section className="space-y-4 md:space-y-5">
-          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">
-            Front page
+        <p className="text-[0.65rem] uppercase tracking-[0.3em] text-slate-300">
+          Scene {index + 1} / {total}
+        </p>
+        <h1 className="text-3xl md:text-5xl font-light leading-tight text-slate-50">
+          {title}
+        </h1>
+        {subtitle && (
+          <p className="text-sm md:text-base text-slate-100">{subtitle}</p>
+        )}
+        {description && (
+          <p className="text-xs md:text-sm text-slate-300 max-w-2xl mx-auto">
+            {description}
           </p>
-          <h1 className="text-3xl md:text-5xl font-light tracking-tight text-slate-50">
-            Your niche perfume front page – curated by{" "}
-            <span className="bg-gradient-to-r from-amberLux to-softGold bg-clip-text text-transparent">
-              aesthetics, seasons and feelings.
-            </span>
-          </h1>
-          <p className="text-sm md:text-base text-slate-400 max-w-2xl">
-            Use the buttons above to deep-dive into aesthetic sections, seasonal
-            vibes or pure “in my feels” moods. Below, your AI segment, featured
-            fragrance of the week, new arrivals and editorial content.
-          </p>
-        </section>
+        )}
+        {children}
+      </motion.div>
 
-        {/* AI SEGMENT */}
-        <section className="grid md:grid-cols-[3fr,2.2fr] gap-5 items-start">
-          <div className="space-y-3">
-            <p className="text-xs uppercase tracking-[0.24em] text-slate-500">
-              AI segment
-            </p>
-            <h2 className="text-lg md:text-xl font-light text-slate-50">
-              Your AI Scent Stylist — plus feedback loop.
-            </h2>
-            <p className="text-sm md:text-base text-slate-300">
-              The AI reads your lifestyle, music, outfits and moods, then
-              suggests 3–5 niche perfumes. You can rate each recommendation so
-              the system learns what “hit” or “miss” really means for you.
-            </p>
-            <div className="rounded-3xl bg-fog/80 border border-slate-800 p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">
-                  Last recommendation session
-                </span>
-                <span className="text-[0.7rem] text-amberLux">
-                  Mock UI — rating only
-                </span>
-              </div>
-              <div className="space-y-2">
-                {[1, 2, 3].map(idx => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between gap-3 bg-slate-950/60 border border-slate-800 rounded-2xl px-3 py-2"
-                  >
-                    <div className="flex flex-col">
-                      <span className="text-xs text-slate-300">
-                        Recommendation #{idx}
-                      </span>
-                      <span className="text-[0.7rem] text-slate-500">
-                        Example perfume name
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1 text-amberLux text-sm">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <span
-                          key={i}
-                          className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-amberLux/60 text-[0.65rem]"
-                        >
-                          {i + 1}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <p className="text-[0.7rem] text-slate-500">
-                In production, tapping a rating would send feedback to the AI
-                engine and refine future matches for you and similar users.
+      {index === 0 && (
+        <motion.div
+          className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[0.75rem] text-slate-200 flex flex-col items-center gap-1"
+          animate={{ opacity: [1, 0.4, 1] }}
+          transition={{ duration: 2.4, repeat: Infinity }}
+        >
+          <span>Scroll / swipe to explore</span>
+          <span className="text-lg leading-none">↓</span>
+        </motion.div>
+      )}
+    </section>
+  );
+}
+
+function ThreeDCard({ delay }: { delay: number }) {
+  const [rotation, setRotation] = useState({ x: 0, y: 0 });
+
+  function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left - rect.width / 2;
+    const y = e.clientY - rect.top - rect.height / 2;
+    const rotateX = (y / rect.height) * -12;
+    const rotateY = (x / rect.width) * 12;
+    setRotation({ x: rotateX, y: rotateY });
+  }
+
+  function handleMouseLeave() {
+    setRotation({ x: 0, y: 0 });
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 80, scale: 0.9 }}
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{
+        delay,
+        duration: 0.7,
+        ease: [0.23, 0.86, 0.32, 0.99]
+      }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{
+        transform: `perspective(900px) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`
+      }}
+      className="h-40 md:h-56 rounded-3xl bg-slate-950/80 border border-slate-700/80 shadow-[0_30px_80px_rgba(0,0,0,0.85)] transition-transform duration-150 will-change-transform overflow-hidden"
+    >
+      <div className="h-full w-full bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.22),_transparent_60%)]" />
+    </motion.div>
+  );
+}
+
+export default function HomePage() {
+  const mainRef = useRef<HTMLDivElement | null>(null);
+  const [activeScene, setActiveScene] = useState(0);
+  const [scrollVelocity, setScrollVelocity] = useState(0);
+  const [scrollDirection, setScrollDirection] =
+    useState<ScrollDirection>("down");
+
+  const featured = products[0];
+  const newIn = products.slice(1, 4);
+  const scenesCount = 4;
+
+  const sceneNames = [
+    "Welcome · Front Page",
+    "AI Scent Stylist",
+    "Featured Perfume of the Week",
+    "New In · Fresh Arrivals"
+  ];
+
+  // za velocity smoothing
+  const velRef = useRef(0);
+  const animatingRef = useRef(false);
+  const currentIndexRef = useRef(0);
+
+  // DISCRETE SCROLL: jedan wheel korak = jedan slide
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      const delta = e.deltaY;
+
+      // update velocity (i za parallax i za direction)
+      const smoothed = smooth(velRef.current, delta, 0.15);
+      velRef.current = smoothed;
+      setScrollVelocity(smoothed);
+
+      if (Math.abs(delta) < 25) return; // ignoriraj male pomake
+
+      const direction: ScrollDirection = delta > 0 ? "down" : "up";
+      setScrollDirection(direction);
+
+      if (animatingRef.current) {
+        e.preventDefault();
+        return;
+      }
+
+      const sections =
+        document.querySelectorAll<HTMLElement>("section[data-scene]");
+      if (!sections.length) return;
+
+      let nextIndex =
+        currentIndexRef.current + (direction === "down" ? 1 : -1);
+      nextIndex = Math.max(0, Math.min(scenesCount - 1, nextIndex));
+      if (nextIndex === currentIndexRef.current) return;
+
+      animatingRef.current = true;
+      e.preventDefault();
+
+      const targetSection = sections[nextIndex];
+      const top = targetSection.offsetTop;
+
+      window.scrollTo({ top, behavior: "smooth" });
+
+      currentIndexRef.current = nextIndex;
+      setActiveScene(nextIndex);
+
+      const el = document.getElementById("sceneSubtitle");
+      if (el) el.textContent = sceneNames[nextIndex] ?? "";
+
+      setTimeout(() => {
+        animatingRef.current = false;
+      }, 900);
+    };
+
+    window.addEventListener("wheel", handleWheel, { passive: false });
+    return () => window.removeEventListener("wheel", handleWheel as any);
+  }, []);
+
+  // progress bar iz activeScene
+  const progressPercent =
+    scenesCount > 1 ? (activeScene / (scenesCount - 1)) * 100 : 0;
+
+  return (
+    <main
+      ref={mainRef}
+      className="relative min-h-screen bg-black text-slate-50 overflow-x-hidden"
+    >
+      {/* LEFT progress bar + scene dots */}
+      <div className="fixed left-4 md:left-8 top-1/2 -translate-y-1/2 z-40 hidden sm:flex flex-col items-center gap-3">
+        <div className="w-[2px] h-40 bg-slate-800 rounded-full overflow-hidden">
+          <div
+            style={{ height: `${progressPercent}%` }}
+            className="w-full bg-gradient-to-b from-amberLux to-softGold transition-[height] duration-500"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          {Array.from({ length: scenesCount }).map((_, i) => (
+            <button
+              key={i}
+              className={`h-2 w-2 rounded-full border ${
+                i === activeScene
+                  ? "bg-amberLux border-amberLux"
+                  : "border-slate-600 bg-slate-900"
+              }`}
+              aria-label={`Go to scene ${i + 1}`}
+              onClick={() => {
+                const sections =
+                  document.querySelectorAll<HTMLElement>(
+                    "section[data-scene]"
+                  );
+                const target = sections[i];
+                if (!target) return;
+                const top = target.offsetTop;
+                window.scrollTo({ top, behavior: "smooth" });
+                currentIndexRef.current = i;
+                setActiveScene(i);
+                const el = document.getElementById("sceneSubtitle");
+                if (el) el.textContent = sceneNames[i] ?? "";
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* SCENES */}
+      <div>
+        {/* 1 – Welcome / vibe intro */}
+        <SlideScene
+          index={0}
+          total={scenesCount}
+          scrollVelocity={scrollVelocity}
+          scrollDirection={scrollDirection}
+          imageUrl="/section-1.jpg"
+          title="Discover niche perfumes through aesthetics, seasons & feelings."
+          subtitle="A cinematic front page for perfume obsessives."
+          description="You don’t need to know notes or pyramids. Just scroll: we’ll guide you through moods, seasons and AI-powered picks."
+          onActive={i => {
+            currentIndexRef.current = i;
+            setActiveScene(i);
+            const el = document.getElementById("sceneSubtitle");
+            if (el) el.textContent = sceneNames[i] ?? "";
+          }}
+        >
+          <div className="flex flex-wrap justify-center gap-3 pt-2">
+            <Link
+              href="/aesthetic"
+              className="text-xs md:text-sm px-4 py-2 rounded-3xl border border-slate-400/50 text-slate-50 hover:border-amberLux hover:text-amberLux bg-black/40 backdrop-blur-sm transition"
+            >
+              Browse aesthetic sections
+            </Link>
+            <Link
+              href="/seasonal"
+              className="text-xs md:text-sm px-4 py-2 rounded-3xl border border-slate-400/50 text-slate-50 hover:border-amberLux hover:text-amberLux bg-black/40 backdrop-blur-sm transition"
+            >
+              Check seasonal vibes
+            </Link>
+            <Link
+              href="/feels"
+              className="text-xs md:text-sm px-4 py-2 rounded-3xl border border-slate-400/50 text-slate-50 hover:border-amberLux hover:text-amberLux bg-black/40 backdrop-blur-sm transition"
+            >
+              I&apos;m in my feels →
+            </Link>
+          </div>
+        </SlideScene>
+
+        {/* 2 – AI Scent Stylist */}
+        <SlideScene
+          index={1}
+          total={scenesCount}
+          scrollVelocity={scrollVelocity}
+          scrollDirection={scrollDirection}
+          imageUrl="/section-2.jpg"
+          title="AI Scent Stylist"
+          subtitle="Your digital nose that speaks in vibe, not chemistry."
+          description="Answer a visual-first quiz about your outfits, playlists and social battery. We’ll serve 3–5 perfumes with emotional explanations, not just note lists."
+          onActive={i => {
+            currentIndexRef.current = i;
+            setActiveScene(i);
+            const el = document.getElementById("sceneSubtitle");
+            if (el) el.textContent = sceneNames[i] ?? "";
+          }}
+        >
+          <div className="flex flex-wrap justify-center gap-3 pt-2">
+            <Link
+              href="/quiz"
+              className="inline-flex items-center justify-center px-6 py-2.5 rounded-3xl bg-gradient-to-r from-amberLux to-softGold text-ink text-xs md:text-sm shadow-lux-soft hover:opacity-95 transition"
+            >
+              Start AI Scent Stylist
+            </Link>
+            <span className="text-[0.7rem] text-slate-200 max-w-xs">
+              In the full build, this slide would also show your last session,
+              saved personas and how often people like you loved the picks.
+            </span>
+          </div>
+        </SlideScene>
+
+        {/* 3 – Featured perfume */}
+        <SlideScene
+          index={2}
+          total={scenesCount}
+          scrollVelocity={scrollVelocity}
+          scrollDirection={scrollDirection}
+          imageUrl="/section-3.jpg"
+          title={
+            featured
+              ? `Featured perfume of the week: ${featured.name}`
+              : "Featured perfume of the week"
+          }
+          subtitle={featured?.house}
+          description={featured?.description}
+          onActive={i => {
+            currentIndexRef.current = i;
+            setActiveScene(i);
+            const el = document.getElementById("sceneSubtitle");
+            if (el) el.textContent = sceneNames[i] ?? "";
+          }}
+        >
+          {featured && (
+            <div className="flex flex-col items-center gap-3 pt-1">
+              <p className="text-[0.7rem] text-slate-200">
+                Vibe tags: {featured.vibeTags.join(" • ")}
               </p>
               <Link
-                href="/quiz"
-                className="inline-flex items-center justify-center rounded-3xl px-4 py-2.5 text-xs bg-gradient-to-r from-amberLux to-softGold text-ink shadow-lux-soft hover:opacity-95 transition"
+                href={`/product/${featured.id}`}
+                className="inline-flex items-center justify-center px-6 py-2.5 rounded-3xl border border-amberLux text-amberLux text-xs md:text-sm bg-black/40 backdrop-blur-sm hover:bg-amberLux hover:text-ink transition"
               >
-                Start / redo AI recommendations
+                Explore this week&apos;s feature →
               </Link>
             </div>
-          </div>
+          )}
+        </SlideScene>
 
-          <div
-            className="relative rounded-3xl bg-gradient-to-br from-fog via-slate-900 to-black p-4 md:p-6 shadow-lux-soft overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(248,191,119,0.24),_transparent_60%)] opacity-80" />
-            <div className="relative space-y-3">
-              <p className="text-xs uppercase tracking-[0.22em] text-slate-300">
-                Why rating matters
-              </p>
-              <p className="text-xs text-slate-200">
-                Every rating becomes an anonymous datapoint that teaches the AI
-                how real humans use perfume: which vibes overperform, which
-                notes flop, and how lifestyle changes affect taste over time.
-              </p>
-              <p className="text-xs text-slate-400">
-                Think of it as slowly training a fragrance sommelier that
-                actually remembers how you felt last winter.
-              </p>
-            </div>
+        {/* 4 – New in + editorial mood */}
+        <SlideScene
+          index={3}
+          total={scenesCount}
+          scrollVelocity={scrollVelocity}
+          scrollDirection={scrollDirection}
+          imageUrl="/section-4.jpg"
+          title="New arrivals & slow perfume stories."
+          subtitle="Fresh niche drops plus weekly deep dives."
+          description="A rotating selection of new releases, paired with short, readable pieces about fragrance culture, notes and perfumers."
+          onActive={i => {
+            currentIndexRef.current = i;
+            setActiveScene(i);
+            const el = document.getElementById("sceneSubtitle");
+            if (el) el.textContent = sceneNames[i] ?? "";
+          }}
+        >
+          <div className="mt-4 grid grid-cols-3 gap-4 max-w-xl mx-auto">
+            {newIn.map((p, i) => (
+              <Link key={p.id} href={`/product/${p.id}`}>
+                <ThreeDCard delay={i * 0.15} />
+              </Link>
+            ))}
           </div>
-        </section>
-
-        {/* FEATURED PERFUME + NEW IN + EDITORIAL */}
-        <section className="space-y-6 md:space-y-8">
-          {/* Featured perfume of the week/day */}
-          <div className="space-y-3">
-            <h2 className="text-sm md:text-base uppercase tracking-[0.22em] text-slate-400">
-              Featured perfume of the week
-            </h2>
-            {featured && (
-              <div className="grid md:grid-cols-[2.3fr,2fr] gap-5 items-start rounded-3xl bg-fog/80 border border-slate-800 p-4 md:p-6 shadow-lux-soft">
-                <div className="space-y-3">
-                  <p className="text-xs uppercase tracking-[0.24em] text-slate-500">
-                    {featured.house}
-                  </p>
-                  <h3 className="text-lg md:text-xl text-slate-50">
-                    {featured.name}
-                  </h3>
-                  <p className="text-sm text-slate-300">
-                    {featured.description}
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    Tagged as: {featured.vibeTags.join(" • ")}
-                  </p>
-                  <Link
-                    href={`/product/${featured.id}`}
-                    className="inline-flex items-center justify-center rounded-3xl px-4 py-2.5 text-xs bg-gradient-to-r from-amberLux to-softGold text-ink shadow-lux-soft hover:opacity-95 transition"
-                  >
-                    Explore this week&apos;s feature →
-                  </Link>
-                </div>
-                <div className="relative h-40 md:h-56 rounded-3xl bg-gradient-to-br from-slate-200/10 via-slate-50/5 to-amberLux/20 overflow-hidden">
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.4),_transparent_55%)] mix-blend-screen" />
-                  <div className="absolute inset-0 flex items-end justify-center pb-6">
-                    <div className="h-40 w-20 md:h-48 md:w-24 rounded-3xl bg-gradient-to-b from-slate-100 to-slate-500 shadow-[0_25px_70px_rgba(0,0,0,0.85)] relative" />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* New in */}
-          <div className="space-y-3">
-            <h2 className="text-sm md:text-base uppercase tracking-[0.22em] text-slate-400">
-              New in
-            </h2>
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
-              {newIn.map(p => (
-                <Link
-                  key={p.id}
-                  href={`/product/${p.id}`}
-                  className="min-w-[220px] max-w-[260px] rounded-3xl bg-slate-950/70 border border-slate-800 p-3 flex flex-col justify-between hover:border-amberLux/70 hover:shadow-lux-soft transition"
-                >
-                  <div className="space-y-2">
-                    <div className="h-24 rounded-2xl bg-gradient-to-br from-slate-300/10 via-slate-50/10 to-amberLux/20 mb-1" />
-                    <p className="text-[0.65rem] uppercase tracking-[0.22em] text-slate-500">
-                      {p.house}
-                    </p>
-                    <p className="text-sm text-slate-50">{p.name}</p>
-                    <p className="text-[0.7rem] text-slate-400 line-clamp-3">
-                      {p.description}
-                    </p>
-                  </div>
-                  <span className="mt-2 text-[0.7rem] text-amberLux">
-                    View details →
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* Deep dive of the week */}
-          <div className="space-y-3">
-            <h2 className="text-sm md:text-base uppercase tracking-[0.22em] text-slate-400">
-              Deep dive of the week
-            </h2>
-            <div className="rounded-3xl bg-slate-950/70 border border-slate-800 p-4 md:p-6 space-y-2">
-              <p className="text-xs uppercase tracking-[0.24em] text-slate-500">
-                Short post / educational
-              </p>
-              <h3 className="text-lg md:text-xl text-slate-50">
-                What does “dark gourmand” actually mean?
-              </h3>
-              <p className="text-sm md:text-base text-slate-300">
-                A quick, digestible explainer on one fragrance idea per week:
-                reimagined categories, misunderstood notes, perfumers we love,
-                and short nerdy dives that stay snackable.
-              </p>
-              <p className="text-xs text-slate-500">
-                In production, this would link to your blog / editorial
-                platform.
-              </p>
-            </div>
-          </div>
-
-          {/* Featured reviews */}
-          <div className="space-y-3">
-            <h2 className="text-sm md:text-base uppercase tracking-[0.22em] text-slate-400">
-              Featured reviews
-            </h2>
-            <div className="grid md:grid-cols-3 gap-3">
-              {[
-                {
-                  source: "User review",
-                  text: `"Feels like reading poetry in an empty bar at 1AM."`
-                },
-                {
-                  source: "TikTok comment",
-                  text: `"I smell like main character with a side quest."`
-                },
-                {
-                  source: "Newsletter blurb",
-                  text: `"A niche discovery experience that finally speaks in vibes, not pyramids."`
-                }
-              ].map((quote, idx) => (
-                <div
-                  key={idx}
-                  className="rounded-3xl bg-slate-950/70 border border-slate-800 p-3 md:p-4 text-sm text-slate-300"
-                >
-                  <p className="italic mb-2">{quote.text}</p>
-                  <p className="text-[0.7rem] text-slate-500 uppercase tracking-[0.18em]">
-                    {quote.source}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      </motion.main>
-    </div>
+          <p className="text-[0.7rem] text-slate-200 max-w-xl mx-auto pt-2">
+            Imagine editorials like “Dark Gourmand explained” or “Why everyone
+            secretly loves iso-e super” living just below this section.
+          </p>
+        </SlideScene>
+      </div>
+    </main>
   );
 }

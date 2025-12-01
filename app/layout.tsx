@@ -22,15 +22,16 @@ export const metadata: Metadata = {
   }
 };
 
-export default function RootLayout({
-  children
-}: {
-  children: React.ReactNode;
-}) {
+import SmartHeader from "@/components/SmartHeader";
+
+export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-gradient-to-b from-ink via-charcoal to-ink">
-        {children}
+      <body className="bg-ink text-slate-50">
+        <SmartHeader />
+        <div className="pt-[70px]"> {/* pushes content down */}
+          {children}
+        </div>
       </body>
     </html>
   );

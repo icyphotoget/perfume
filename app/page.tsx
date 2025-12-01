@@ -208,6 +208,11 @@ export default function HomePage() {
     useState<ScrollDirection>("down");
   const [isDesktop, setIsDesktop] = useState(false);
 
+  // persistent refs za wheel logiku (da se ne resetiraju na svaki render)
+  const velRef = useRef(0);
+  const animatingRef = useRef(false);
+  const currentIndexRef = useRef(0);
+
   // detect desktop vs mobile
   useEffect(() => {
     const check = () => {
@@ -232,10 +237,6 @@ export default function HomePage() {
   // DESKTOP: wheel → snap slide-by-slide
   useEffect(() => {
     if (!isDesktop) return;
-
-    const velRef = { current: 0 };
-    const animatingRef = { current: false };
-    const currentIndexRef = { current: 0 };
 
     const handleWheel = (e: WheelEvent) => {
       const delta = e.deltaY;
@@ -286,16 +287,10 @@ export default function HomePage() {
     return () => window.removeEventListener("wheel", handleWheel as any);
   }, [isDesktop, scenesCount, sceneNames]);
 
-  // mobile: samo lagani velocity za parallax (no snap)
+  // MOBILE: nema snap logike, normalan scroll
   useEffect(() => {
     if (isDesktop) return;
-
-    const handler = () => {
-      // možete dodati nešto kasnije, za sada samo reset
-      setScrollVelocity(0);
-    };
-    window.addEventListener("scroll", handler, { passive: true });
-    return () => window.removeEventListener("scroll", handler);
+    setScrollVelocity(0);
   }, [isDesktop]);
 
   // progress bar derived from activeScene
@@ -307,7 +302,7 @@ export default function HomePage() {
       ref={mainRef}
       className="relative min-h-screen bg-black text-slate-50 overflow-x-hidden"
     >
-      {/* LEFT progress bar – hidden on mobile */}
+      {/* LEFT progress bar – hidden on small screens */}
       <div className="fixed left-4 md:left-8 top-1/2 -translate-y-1/2 z-40 hidden sm:flex flex-col items-center gap-3">
         <div className="w-[2px] h-40 bg-slate-800 rounded-full overflow-hidden">
           <div
@@ -334,6 +329,7 @@ export default function HomePage() {
                 if (!target) return;
                 const top = target.offsetTop;
                 window.scrollTo({ top, behavior: "smooth" });
+                currentIndexRef.current = i;
                 setActiveScene(i);
                 const el = document.getElementById("sceneSubtitle");
                 if (el) el.textContent = sceneNames[i] ?? "";
@@ -357,6 +353,7 @@ export default function HomePage() {
           subtitle="A cinematic front page for perfume obsessives."
           description="You don’t need to know notes or pyramids. Just scroll: we’ll guide you through moods, seasons and AI-powered picks."
           onActive={i => {
+            currentIndexRef.current = i;
             setActiveScene(i);
             const el = document.getElementById("sceneSubtitle");
             if (el) el.textContent = sceneNames[i] ?? "";
@@ -396,6 +393,7 @@ export default function HomePage() {
           subtitle="Your digital nose that speaks in vibe, not chemistry."
           description="Answer a visual-first quiz about your outfits, playlists and social battery. We’ll serve 3–5 perfumes with emotional explanations, not just note lists."
           onActive={i => {
+            currentIndexRef.current = i;
             setActiveScene(i);
             const el = document.getElementById("sceneSubtitle");
             if (el) el.textContent = sceneNames[i] ?? "";
@@ -431,6 +429,7 @@ export default function HomePage() {
           subtitle={featured?.house}
           description={featured?.description}
           onActive={i => {
+            currentIndexRef.current = i;
             setActiveScene(i);
             const el = document.getElementById("sceneSubtitle");
             if (el) el.textContent = sceneNames[i] ?? "";
@@ -463,6 +462,7 @@ export default function HomePage() {
           subtitle="Fresh niche drops plus weekly deep dives."
           description="A rotating selection of new releases, paired with short, readable pieces about fragrance culture, notes and perfumers."
           onActive={i => {
+            currentIndexRef.current = i;
             setActiveScene(i);
             const el = document.getElementById("sceneSubtitle");
             if (el) el.textContent = sceneNames[i] ?? "";

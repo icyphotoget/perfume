@@ -18,7 +18,7 @@ export default function SmartHeader() {
         // scrolling down → hide
         setHidden(true);
       } else {
-        // scrolling up or near top → show
+        // scrolling up → show
         setHidden(false);
       }
 
@@ -39,7 +39,7 @@ export default function SmartHeader() {
       transition={{ duration: 0.35, ease: "easeOut" }}
       className="fixed top-0 left-0 right-0 z-50 bg-ink/80 backdrop-blur-lg border-b border-slate-800/60"
     >
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
         {/* LEFT: Logo + dynamic scene subtitle */}
         <Link href="/" className="flex items-center gap-2">
           <div className="h-6 w-6 rounded-full bg-amberLux shadow-md" />
@@ -56,30 +56,30 @@ export default function SmartHeader() {
           </div>
         </Link>
 
-        {/* CENTER: 3 MAIN TABS */}
-        <div className="hidden md:flex items-center gap-2">
+        {/* CENTER: 3 MAIN TABS – vidljivi i na mobitelu */}
+        <div className="flex flex-1 justify-center md:justify-center items-center gap-2 flex-wrap min-w-[200px]">
           <Link
             href="/aesthetic"
-            className="text-xs px-3 py-1.5 rounded-3xl border border-slate-700 text-slate-300 hover:border-amberLux hover:text-amberLux transition"
+            className="text-[0.7rem] md:text-xs px-3 py-1.5 rounded-3xl border border-slate-700 text-slate-300 hover:border-amberLux hover:text-amberLux transition"
           >
             Aesthetic sections
           </Link>
           <Link
             href="/seasonal"
-            className="text-xs px-3 py-1.5 rounded-3xl border border-slate-700 text-slate-300 hover:border-amberLux hover:text-amberLux transition"
+            className="text-[0.7rem] md:text-xs px-3 py-1.5 rounded-3xl border border-slate-700 text-slate-300 hover:border-amberLux hover:text-amberLux transition"
           >
             Seasonal vibes
           </Link>
           <Link
             href="/feels"
-            className="text-xs px-3 py-1.5 rounded-3xl border border-slate-700 text-slate-300 hover:border-amberLux hover:text-amberLux transition"
+            className="text-[0.7rem] md:text-xs px-3 py-1.5 rounded-3xl border border-slate-700 text-slate-300 hover:border-amberLux hover:text-amberLux transition"
           >
-            In my feels 
+            In my feels / mood
           </Link>
         </div>
 
-        {/* RIGHT: Nav links */}
-        <nav className="hidden md:flex items-center gap-6 text-xs uppercase text-slate-400">
+        {/* RIGHT: Nav links – na vrlo malom ekranu se mogu prelomiti u drugi red */}
+        <nav className="flex items-center gap-4 text-[0.7rem] md:text-xs uppercase text-slate-400">
           <Link href="/" className="hover:text-amberLux transition">
             Home
           </Link>

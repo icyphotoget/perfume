@@ -4,82 +4,105 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { vibes } from "@/lib/data";
 
-const baseVariants = {
-  initial: { opacity: 0, y: 20, scale: 0.98 },
+const sectionVariants = {
+  initial: { opacity: 0, y: 30, scale: 0.97 },
   animate: { opacity: 1, y: 0, scale: 1 }
 };
 
 export default function FeelsPage() {
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6 md:py-10">
-      <header className="flex items-center justify-between mb-6 md:mb-8">
-        <Link
-          href="/"
-          className="flex items-center gap-2 text-xs text-slate-400 hover:text-amberLux"
-        >
-          ← Back to home
-        </Link>
-        <nav className="hidden md:flex items-center gap-6 text-xs uppercase text-slate-400">
-          <Link href="/" className="hover:text-amberLux transition">
-            Home
+    <div className="min-h-screen bg-gradient-to-b from-ink via-charcoal to-ink text-slate-50">
+      {/* Sticky header */}
+      <header className="sticky top-0 z-30 border-b border-slate-800/70 bg-ink/80 backdrop-blur-md">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-xs text-slate-400 hover:text-amberLux"
+          >
+            ← Home
           </Link>
-          <Link href="/quiz" className="hover:text-amberLux transition">
-            AI Scent Stylist
-          </Link>
-          <Link href="/checkout" className="hover:text-amberLux transition">
-            Cart
-          </Link>
-        </nav>
+          <nav className="hidden md:flex items-center gap-6 text-xs uppercase text-slate-400">
+            <Link href="/aesthetic" className="hover:text-amberLux transition">
+              Aesthetic
+            </Link>
+            <Link href="/seasonal" className="hover:text-amberLux transition">
+              Seasonal
+            </Link>
+            <Link
+              href="/feels"
+              className="hover:text-amberLux transition text-amberLux"
+            >
+              Feels / Mood
+            </Link>
+          </nav>
+        </div>
       </header>
 
-      <motion.main
-        variants={baseVariants}
-        initial="initial"
-        animate="animate"
-        transition={{ duration: 0.45, ease: "easeOut" }}
-        className="space-y-6 md:space-y-8"
-      >
-        <section className="space-y-3">
-          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">
-            Tab 3
-          </p>
-          <h1 className="text-2xl md:text-4xl font-light text-slate-50">
-            In my feels / mood
-          </h1>
-          <p className="text-sm md:text-base text-slate-400 max-w-2xl">
-            Pure mood-based navigation: you don&apos;t have to know notes or
-            families. Just pick the storyline that feels like you today.
-          </p>
-        </section>
+      {/* Scroll-snap container */}
+      <div className="h-[calc(100vh-52px)] max-h-[calc(100vh-52px)] overflow-y-scroll snap-y snap-mandatory">
+        {vibes.map((vibe, idx) => (
+          <section
+            key={vibe.slug}
+            className="snap-start h-screen relative flex items-end md:items-center"
+          >
+            {/* Background gradient per vibe (simple, but looks luxe) */}
+            <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-black to-slate-900" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(248,191,119,0.2),_transparent_60%)] mix-blend-soft-light" />
 
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          {vibes.map(vibe => (
-            <Link
-              key={vibe.slug}
-              href={`/vibe/${vibe.slug}`}
-              className="relative group rounded-3xl overflow-hidden bg-fog/70 border border-slate-800/80 p-3 md:p-4 flex flex-col justify-between shadow-lux-soft/40 hover:border-amberLux/60 hover:shadow-lux-soft transition"
+            <motion.div
+              variants={sectionVariants}
+              initial="initial"
+              animate="animate"
+              transition={{ duration: 0.55, ease: "easeOut" }}
+              className="relative z-10 max-w-6xl mx-auto px-4 py-10 md:py-16 flex flex-col md:flex-row items-end md:items-center justify-between gap-6"
             >
-              <div className="relative z-10 space-y-1 text-left">
-                <p className="text-[0.65rem] uppercase tracking-[0.2em] text-slate-400">
-                  Mood
+              <div className="max-w-xl space-y-4 md:space-y-5">
+                <p className="text-[0.65rem] uppercase tracking-[0.3em] text-slate-300">
+                  Mood {idx + 1} of {vibes.length}
                 </p>
-                <h3 className="text-sm md:text-base font-medium text-slate-50">
+                <h1 className="text-3xl md:text-5xl font-light leading-tight">
                   {vibe.name}
-                </h3>
-                <p className="hidden md:block text-[0.7rem] text-slate-400">
+                </h1>
+                <p className="text-sm md:text-base text-slate-100">
                   {vibe.tagline}
                 </p>
+                <p className="text-xs md:text-sm text-slate-200 max-w-md">
+                  This section is for days when you don&apos;t know the note,
+                  you just know the storyline. Pick the mood, let AI handle the
+                  rest.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <Link
+                    href={`/vibe/${vibe.slug}`}
+                    className="inline-flex items-center justify-center rounded-3xl px-4 py-2.5 text-xs bg-slate-50 text-ink hover:bg-amberLux transition"
+                  >
+                    See perfumes for this mood
+                  </Link>
+                  <Link
+                    href="/quiz"
+                    className="inline-flex items-center justify-center rounded-3xl px-4 py-2.5 text-xs border border-slate-700/80 text-slate-200 hover:border-amberLux/70 hover:text-amberLux transition bg-fog/40 backdrop-blur-xs"
+                  >
+                    Ask AI to match this vibe
+                  </Link>
+                </div>
               </div>
-              <div className="relative z-10 mt-3 flex items-center justify-between text-[0.65rem] text-slate-400">
-                <span>See perfumes</span>
-                <span className="text-amberLux group-hover:translate-x-0.5 transition">
-                  →
+
+              <div className="w-full md:w-80 lg:w-96 h-56 md:h-80 rounded-3xl bg-slate-950/70 border border-slate-700/80 overflow-hidden shadow-lux-soft">
+                <div className="h-full w-full bg-[radial-gradient(circle_at_center,_rgba(0,0,0,0.7),_transparent_60%)]" />
+              </div>
+            </motion.div>
+
+            {idx === 0 && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[0.7rem] text-slate-300 flex flex-col items-center gap-1">
+                <span className="animate-pulse">
+                  Scroll to move through your moods
                 </span>
+                <span className="text-xl leading-none">↓</span>
               </div>
-            </Link>
-          ))}
-        </section>
-      </motion.main>
+            )}
+          </section>
+        ))}
+      </div>
     </div>
   );
 }

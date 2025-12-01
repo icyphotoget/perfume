@@ -3,90 +3,129 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 
-const baseVariants = {
-  initial: { opacity: 0, y: 20, scale: 0.98 },
+const sectionVariants = {
+  initial: { opacity: 0, y: 30, scale: 0.97 },
   animate: { opacity: 1, y: 0, scale: 1 }
 };
 
+const seasons = [
+  {
+    id: "spring",
+    title: "Spring Bloom",
+    subtitle: "Fresh florals, soft greens, rainy sidewalks.",
+    copy: "Light musks, dewy roses and tender greens that feel like opening windows after winter. Easy to overspray, easy to love.",
+    bg: "from-emerald-200/20 via-slate-900 to-black"
+  },
+  {
+    id: "summer",
+    title: "Summer Heat",
+    subtitle: "Solar skin, salt, citrus, sweaty nightlife.",
+    copy: "Salty skin, sun lotion, late-night air and overripe fruits. The kind of scents that smell better the more you dance.",
+    bg: "from-orange-200/20 via-slate-900 to-black"
+  },
+  {
+    id: "autumn",
+    title: "Autumn Smoke",
+    subtitle: "Spice, woods, leather, golden-hour melancholy.",
+    copy: "Cardamom, tobacco, boozy vanilla and quiet campfire trail. Feels like knitwear, low sun and nostalgia.",
+    bg: "from-amber-200/20 via-slate-900 to-black"
+  },
+  {
+    id: "winter",
+    title: "Winter Velvet",
+    subtitle: "Resins, incense, cashmere and candlelight.",
+    copy: "Balsamic resins, incense, labdanum and cozy gourmands that turn your scarf into a portable fireplace.",
+    bg: "from-slate-200/20 via-slate-900 to-black"
+  }
+];
+
 export default function SeasonalPage() {
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6 md:py-10">
-      <header className="flex items-center justify-between mb-6 md:mb-8">
-        <Link
-          href="/"
-          className="flex items-center gap-2 text-xs text-slate-400 hover:text-amberLux"
-        >
-          ← Back to home
-        </Link>
-        <nav className="hidden md:flex items-center gap-6 text-xs uppercase text-slate-400">
-          <Link href="/" className="hover:text-amberLux transition">
-            Home
+    <div className="min-h-screen bg-gradient-to-b from-ink via-charcoal to-ink text-slate-50">
+      {/* Sticky header */}
+      <header className="sticky top-0 z-30 border-b border-slate-800/70 bg-ink/80 backdrop-blur-md">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-xs text-slate-400 hover:text-amberLux"
+          >
+            ← Home
           </Link>
-          <Link href="/quiz" className="hover:text-amberLux transition">
-            AI Scent Stylist
-          </Link>
-          <Link href="/checkout" className="hover:text-amberLux transition">
-            Cart
-          </Link>
-        </nav>
+          <nav className="hidden md:flex items-center gap-6 text-xs uppercase text-slate-400">
+            <Link href="/aesthetic" className="hover:text-amberLux transition">
+              Aesthetic
+            </Link>
+            <Link
+              href="/seasonal"
+              className="hover:text-amberLux transition text-amberLux"
+            >
+              Seasonal
+            </Link>
+            <Link href="/feels" className="hover:text-amberLux transition">
+              Feels / Mood
+            </Link>
+          </nav>
+        </div>
       </header>
 
-      <motion.main
-        variants={baseVariants}
-        initial="initial"
-        animate="animate"
-        transition={{ duration: 0.45, ease: "easeOut" }}
-        className="space-y-6 md:space-y-8"
-      >
-        <section className="space-y-3">
-          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">
-            Tab 2
-          </p>
-          <h1 className="text-2xl md:text-4xl font-light text-slate-50">
-            Seasonal vibes
-          </h1>
-          <p className="text-sm md:text-base text-slate-400 max-w-2xl">
-            Quick seasonal moodboards. Each block later links to a filtered view
-            of perfumes that feel right for that moment of the year.
-          </p>
-        </section>
+      {/* Scroll-snap container */}
+      <div className="h-[calc(100vh-52px)] max-h-[calc(100vh-52px)] overflow-y-scroll snap-y snap-mandatory">
+        {seasons.map((season, idx) => (
+          <section
+            key={season.id}
+            className="snap-start h-screen relative flex items-end md:items-center"
+          >
+            <div
+              className={`absolute inset-0 bg-gradient-to-br ${season.bg}`}
+            />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.18),_transparent_60%)] mix-blend-soft-light" />
 
-        <section className="grid md:grid-cols-4 gap-3 md:gap-4">
-          <SeasonCard
-            season="Spring Bloom"
-            note="Fresh florals, soft greens, rainy sidewalks."
-          />
-          <SeasonCard
-            season="Summer Heat"
-            note="Solar skin, salt, citrus, sweaty nightlife."
-          />
-          <SeasonCard
-            season="Autumn Smoke"
-            note="Spice, woods, leather, golden-hour melancholy."
-          />
-          <SeasonCard
-            season="Winter Velvet"
-            note="Resins, incense, cashmere and candlelight."
-          />
-        </section>
-      </motion.main>
-    </div>
-  );
-}
+            <motion.div
+              variants={sectionVariants}
+              initial="initial"
+              animate="animate"
+              transition={{ duration: 0.55, ease: "easeOut" }}
+              className="relative z-10 max-w-6xl mx-auto px-4 py-10 md:py-16 flex flex-col md:flex-row items-end md:items-center justify-between gap-6"
+            >
+              <div className="max-w-xl space-y-4 md:space-y-5">
+                <p className="text-[0.65rem] uppercase tracking-[0.3em] text-slate-200">
+                  Seasonal vibe #{idx + 1}
+                </p>
+                <h1 className="text-3xl md:text-5xl font-light leading-tight">
+                  {season.title}
+                </h1>
+                <p className="text-sm md:text-base text-slate-100">
+                  {season.subtitle}
+                </p>
+                <p className="text-xs md:text-sm text-slate-200">
+                  {season.copy}
+                </p>
+                <p className="text-[0.7rem] text-slate-300 max-w-md">
+                  Later, this slide becomes a filter: tap Spring Bloom and see
+                  only perfumes that really shine in that part of the year.
+                </p>
+                <Link
+                  href="/quiz"
+                  className="inline-flex items-center justify-center rounded-3xl px-4 py-2.5 text-xs bg-slate-50 text-ink hover:bg-amberLux transition"
+                >
+                  Ask AI for {season.title.toLowerCase()} picks
+                </Link>
+              </div>
 
-function SeasonCard({ season, note }: { season: string; note: string }) {
-  return (
-    <div className="rounded-3xl bg-slate-950/70 border border-slate-800 p-3 flex flex-col justify-between shadow-lux-soft/30">
-      <div className="space-y-1">
-        <p className="text-[0.65rem] uppercase tracking-[0.22em] text-slate-500">
-          {season}
-        </p>
-        <p className="text-xs text-slate-300">{note}</p>
+              <div className="w-full md:w-80 lg:w-96 h-56 md:h-80 rounded-3xl bg-slate-950/60 border border-slate-700/80 overflow-hidden shadow-lux-soft">
+                <div className="h-full w-full bg-[radial-gradient(circle_at_bottom,_rgba(0,0,0,0.65),_transparent_60%)]" />
+              </div>
+            </motion.div>
+
+            {idx === 0 && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[0.7rem] text-slate-300 flex flex-col items-center gap-1">
+                <span className="animate-pulse">Scroll through the seasons</span>
+                <span className="text-xl leading-none">↓</span>
+              </div>
+            )}
+          </section>
+        ))}
       </div>
-      <p className="mt-2 text-[0.7rem] text-slate-500">
-        In the full product: click to see all scents that behave well in this
-        season.
-      </p>
     </div>
   );
 }

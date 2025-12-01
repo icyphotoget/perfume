@@ -10,7 +10,6 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { products } from "@/lib/data";
 
-// simple smoothing for scroll velocity
 function smooth(prev: number, next: number, factor = 0.08) {
   return prev + (next - prev) * factor;
 }
@@ -28,15 +27,9 @@ type SlideBaseProps = {
   scrollVelocity: number;
   scrollDirection: ScrollDirection;
   onActive: (index: number) => void;
+  isDesktop: boolean;
 };
 
-/**
- * Jedna "scene" / slide:
- * - full-screen (h-screen)
- * - background image s laganim parallax + zoom
- * - fade overlay
- * - Apple-style direction-aware content motion
- */
 function SlideScene({
   index,
   total,
@@ -47,7 +40,8 @@ function SlideScene({
   children,
   scrollVelocity,
   scrollDirection,
-  onActive
+  onActive,
+  isDesktop
 }: SlideBaseProps) {
   const ref = useRef<HTMLElement | null>(null);
 
@@ -56,29 +50,20 @@ function SlideScene({
     if (inView) onActive(index);
   }, [inView, index, onActive]);
 
-  // scroll progress samo za ovaj slide
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start end", "end start"]
   });
 
+  // Desktop-only transforms
   const bgY = useTransform(scrollYProgress, [0, 1], ["-6%", "4%"]);
   const fadeOverlay = useTransform(
     scrollYProgress,
     [0, 0.5, 1],
     [0.7, 0.25, 0.7]
   );
-
-  // lagani zoom ovisno o velocityju iz roditelja
-  const [bgScale, setBgScale] = useState(1);
-  useEffect(() => {
-    const zoomAmount = Math.min(Math.abs(scrollVelocity) * 0.02, 0.05);
-    setBgScale(1 + zoomAmount);
-  }, [scrollVelocity]);
-
   const yDown = useTransform(scrollYProgress, [0, 0.4], ["16%", "0%"]);
   const yUp = useTransform(scrollYProgress, [0, 0.4], ["-16%", "0%"]);
-
   const clipPath = useTransform(
     scrollYProgress,
     [0, 0.25, 0.7, 1],
@@ -90,52 +75,74 @@ function SlideScene({
     ]
   );
 
+  const [bgScale, setBgScale] = useState(1);
+  useEffect(() => {
+    if (!isDesktop) {
+      setBgScale(1);
+      return;
+    }
+    const zoomAmount = Math.min(Math.abs(scrollVelocity) * 0.02, 0.05);
+    setBgScale(1 + zoomAmount);
+  }, [scrollVelocity, isDesktop]);
+
   return (
     <section
       ref={ref}
       data-scene={index}
-      className="relative h-screen w-full flex items-center justify-center"
+      className="relative min-h-[100svh] w-full flex items-center justify-center"
     >
       {/* background image */}
       <motion.div
-        style={{
-          y: bgY,
-          scale: bgScale,
-          backgroundImage: `url(${imageUrl})`
-        }}
+        style={
+          isDesktop
+            ? {
+                y: bgY,
+                scale: bgScale,
+                backgroundImage: `url(${imageUrl})`
+              }
+            : { backgroundImage: `url(${imageUrl})` }
+        }
         className="absolute inset-0 bg-cover bg-center will-change-transform"
       />
 
       {/* overlay */}
       <motion.div
-        style={{ opacity: fadeOverlay }}
-        className="absolute inset-0 bg-black pointer-events-none"
+        style={isDesktop ? { opacity: fadeOverlay } : undefined}
+        className="absolute inset-0 bg-black/55 pointer-events-none"
       />
 
       {/* content */}
       <motion.div
-        style={{
-          y: scrollDirection === "down" ? yDown : yUp,
-          clipPath
-        }}
-        transition={{
-          type: "tween",
-          ease: [0.23, 0.86, 0.32, 0.99],
-          duration: 0.6
-        }}
-        className="relative z-10 max-w-3xl mx-auto px-6 py-10 md:py-16 text-center space-y-4 md:space-y-5 bg-black/40 backdrop-blur-xl rounded-[2.5rem] border border-white/10 shadow-[0_40px_120px_rgba(0,0,0,0.9)]"
+        style={
+          isDesktop
+            ? {
+                y: scrollDirection === "down" ? yDown : yUp,
+                clipPath
+              }
+            : undefined
+        }
+        transition={
+          isDesktop
+            ? {
+                type: "tween",
+                ease: [0.23, 0.86, 0.32, 0.99],
+                duration: 0.6
+              }
+            : undefined
+        }
+        className="relative z-10 max-w-3xl mx-auto px-5 md:px-6 py-16 md:py-16 text-center space-y-4 md:space-y-5 bg-black/55 backdrop-blur-xl rounded-[1.75rem] md:rounded-[2.5rem] border border-white/10 shadow-[0_30px_90px_rgba(0,0,0,0.9)]"
       >
-        <p className="text-[0.65rem] uppercase tracking-[0.3em] text-slate-300">
+        <p className="text-[0.6rem] md:text-[0.65rem] uppercase tracking-[0.3em] text-slate-300">
           Scene {index + 1} / {total}
         </p>
-        <h1 className="text-3xl md:text-5xl font-light leading-tight text-slate-50">
+        <h1 className="text-2xl md:text-5xl font-light leading-tight text-slate-50">
           {title}
         </h1>
         {subtitle && (
-          <p className="text-sm md:text-base text-slate-100">{subtitle}</p>
+          <p className="text-xs md:text-base text-slate-100">{subtitle}</p>
         )}
         {description && (
-          <p className="text-xs md:text-sm text-slate-300 max-w-2xl mx-auto">
+          <p className="text-[0.7rem] md:text-sm text-slate-300 max-w-2xl mx-auto">
             {description}
           </p>
         )}
@@ -144,7 +151,7 @@ function SlideScene({
 
       {index === 0 && (
         <motion.div
-          className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[0.75rem] text-slate-200 flex flex-col items-center gap-1"
+          className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[0.75rem] text-slate-200 hidden sm:flex flex-col items-center gap-1"
           animate={{ opacity: [1, 0.4, 1] }}
           transition={{ duration: 2.4, repeat: Infinity }}
         >
@@ -186,7 +193,7 @@ function ThreeDCard({ delay }: { delay: number }) {
       style={{
         transform: `perspective(900px) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`
       }}
-      className="h-40 md:h-56 rounded-3xl bg-slate-950/80 border border-slate-700/80 shadow-[0_30px_80px_rgba(0,0,0,0.85)] transition-transform duration-150 will-change-transform overflow-hidden"
+      className="h-32 md:h-56 rounded-2xl md:rounded-3xl bg-slate-950/80 border border-slate-700/80 shadow-[0_20px_60px_rgba(0,0,0,0.85)] transition-transform duration-150 will-change-transform overflow-hidden"
     >
       <div className="h-full w-full bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.22),_transparent_60%)]" />
     </motion.div>
@@ -199,6 +206,17 @@ export default function HomePage() {
   const [scrollVelocity, setScrollVelocity] = useState(0);
   const [scrollDirection, setScrollDirection] =
     useState<ScrollDirection>("down");
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  // detect desktop vs mobile
+  useEffect(() => {
+    const check = () => {
+      setIsDesktop(window.innerWidth >= 768);
+    };
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   const featured = products[0];
   const newIn = products.slice(1, 4);
@@ -211,22 +229,22 @@ export default function HomePage() {
     "New In · Fresh Arrivals"
   ];
 
-  // za velocity smoothing
-  const velRef = useRef(0);
-  const animatingRef = useRef(false);
-  const currentIndexRef = useRef(0);
-
-  // DISCRETE SCROLL: jedan wheel korak = jedan slide
+  // DESKTOP: wheel → snap slide-by-slide
   useEffect(() => {
+    if (!isDesktop) return;
+
+    const velRef = { current: 0 };
+    const animatingRef = { current: false };
+    const currentIndexRef = { current: 0 };
+
     const handleWheel = (e: WheelEvent) => {
       const delta = e.deltaY;
 
-      // update velocity (i za parallax i za direction)
       const smoothed = smooth(velRef.current, delta, 0.15);
       velRef.current = smoothed;
       setScrollVelocity(smoothed);
 
-      if (Math.abs(delta) < 25) return; // ignoriraj male pomake
+      if (Math.abs(delta) < 25) return;
 
       const direction: ScrollDirection = delta > 0 ? "down" : "up";
       setScrollDirection(direction);
@@ -266,9 +284,21 @@ export default function HomePage() {
 
     window.addEventListener("wheel", handleWheel, { passive: false });
     return () => window.removeEventListener("wheel", handleWheel as any);
-  }, []);
+  }, [isDesktop, scenesCount, sceneNames]);
 
-  // progress bar iz activeScene
+  // mobile: samo lagani velocity za parallax (no snap)
+  useEffect(() => {
+    if (isDesktop) return;
+
+    const handler = () => {
+      // možete dodati nešto kasnije, za sada samo reset
+      setScrollVelocity(0);
+    };
+    window.addEventListener("scroll", handler, { passive: true });
+    return () => window.removeEventListener("scroll", handler);
+  }, [isDesktop]);
+
+  // progress bar derived from activeScene
   const progressPercent =
     scenesCount > 1 ? (activeScene / (scenesCount - 1)) * 100 : 0;
 
@@ -277,7 +307,7 @@ export default function HomePage() {
       ref={mainRef}
       className="relative min-h-screen bg-black text-slate-50 overflow-x-hidden"
     >
-      {/* LEFT progress bar + scene dots */}
+      {/* LEFT progress bar – hidden on mobile */}
       <div className="fixed left-4 md:left-8 top-1/2 -translate-y-1/2 z-40 hidden sm:flex flex-col items-center gap-3">
         <div className="w-[2px] h-40 bg-slate-800 rounded-full overflow-hidden">
           <div
@@ -304,7 +334,6 @@ export default function HomePage() {
                 if (!target) return;
                 const top = target.offsetTop;
                 window.scrollTo({ top, behavior: "smooth" });
-                currentIndexRef.current = i;
                 setActiveScene(i);
                 const el = document.getElementById("sceneSubtitle");
                 if (el) el.textContent = sceneNames[i] ?? "";
@@ -323,32 +352,32 @@ export default function HomePage() {
           scrollVelocity={scrollVelocity}
           scrollDirection={scrollDirection}
           imageUrl="/section-1.jpg"
+          isDesktop={isDesktop}
           title="Discover niche perfumes through aesthetics, seasons & feelings."
           subtitle="A cinematic front page for perfume obsessives."
           description="You don’t need to know notes or pyramids. Just scroll: we’ll guide you through moods, seasons and AI-powered picks."
           onActive={i => {
-            currentIndexRef.current = i;
             setActiveScene(i);
             const el = document.getElementById("sceneSubtitle");
             if (el) el.textContent = sceneNames[i] ?? "";
           }}
         >
-          <div className="flex flex-wrap justify-center gap-3 pt-2">
+          <div className="flex flex-wrap justify-center gap-2 md:gap-3 pt-2">
             <Link
               href="/aesthetic"
-              className="text-xs md:text-sm px-4 py-2 rounded-3xl border border-slate-400/50 text-slate-50 hover:border-amberLux hover:text-amberLux bg-black/40 backdrop-blur-sm transition"
+              className="text-[0.7rem] md:text-xs px-3 md:px-4 py-1.5 md:py-2 rounded-3xl border border-slate-400/50 text-slate-50 hover:border-amberLux hover:text-amberLux bg-black/40 backdrop-blur-sm transition"
             >
               Browse aesthetic sections
             </Link>
             <Link
               href="/seasonal"
-              className="text-xs md:text-sm px-4 py-2 rounded-3xl border border-slate-400/50 text-slate-50 hover:border-amberLux hover:text-amberLux bg-black/40 backdrop-blur-sm transition"
+              className="text-[0.7rem] md:text-xs px-3 md:px-4 py-1.5 md:py-2 rounded-3xl border border-slate-400/50 text-slate-50 hover:border-amberLux hover:text-amberLux bg-black/40 backdrop-blur-sm transition"
             >
               Check seasonal vibes
             </Link>
             <Link
               href="/feels"
-              className="text-xs md:text-sm px-4 py-2 rounded-3xl border border-slate-400/50 text-slate-50 hover:border-amberLux hover:text-amberLux bg-black/40 backdrop-blur-sm transition"
+              className="text-[0.7rem] md:text-xs px-3 md:px-4 py-1.5 md:py-2 rounded-3xl border border-slate-400/50 text-slate-50 hover:border-amberLux hover:text-amberLux bg-black/40 backdrop-blur-sm transition"
             >
               I&apos;m in my feels →
             </Link>
@@ -362,24 +391,24 @@ export default function HomePage() {
           scrollVelocity={scrollVelocity}
           scrollDirection={scrollDirection}
           imageUrl="/section-2.jpg"
+          isDesktop={isDesktop}
           title="AI Scent Stylist"
           subtitle="Your digital nose that speaks in vibe, not chemistry."
           description="Answer a visual-first quiz about your outfits, playlists and social battery. We’ll serve 3–5 perfumes with emotional explanations, not just note lists."
           onActive={i => {
-            currentIndexRef.current = i;
             setActiveScene(i);
             const el = document.getElementById("sceneSubtitle");
             if (el) el.textContent = sceneNames[i] ?? "";
           }}
         >
-          <div className="flex flex-wrap justify-center gap-3 pt-2">
+          <div className="flex flex-wrap justify-center gap-2 md:gap-3 pt-2">
             <Link
               href="/quiz"
-              className="inline-flex items-center justify-center px-6 py-2.5 rounded-3xl bg-gradient-to-r from-amberLux to-softGold text-ink text-xs md:text-sm shadow-lux-soft hover:opacity-95 transition"
+              className="inline-flex items-center justify-center px-4 md:px-6 py-1.5 md:py-2.5 rounded-3xl bg-gradient-to-r from-amberLux to-softGold text-ink text-[0.7rem] md:text-xs shadow-lux-soft hover:opacity-95 transition"
             >
               Start AI Scent Stylist
             </Link>
-            <span className="text-[0.7rem] text-slate-200 max-w-xs">
+            <span className="hidden md:inline text-[0.7rem] text-slate-200 max-w-xs">
               In the full build, this slide would also show your last session,
               saved personas and how often people like you loved the picks.
             </span>
@@ -393,6 +422,7 @@ export default function HomePage() {
           scrollVelocity={scrollVelocity}
           scrollDirection={scrollDirection}
           imageUrl="/section-3.jpg"
+          isDesktop={isDesktop}
           title={
             featured
               ? `Featured perfume of the week: ${featured.name}`
@@ -401,7 +431,6 @@ export default function HomePage() {
           subtitle={featured?.house}
           description={featured?.description}
           onActive={i => {
-            currentIndexRef.current = i;
             setActiveScene(i);
             const el = document.getElementById("sceneSubtitle");
             if (el) el.textContent = sceneNames[i] ?? "";
@@ -414,7 +443,7 @@ export default function HomePage() {
               </p>
               <Link
                 href={`/product/${featured.id}`}
-                className="inline-flex items-center justify-center px-6 py-2.5 rounded-3xl border border-amberLux text-amberLux text-xs md:text-sm bg-black/40 backdrop-blur-sm hover:bg-amberLux hover:text-ink transition"
+                className="inline-flex items-center justify-center px-4 md:px-6 py-1.5 md:py-2.5 rounded-3xl border border-amberLux text-amberLux text-[0.7rem] md:text-xs bg-black/40 backdrop-blur-sm hover:bg-amberLux hover:text-ink transition"
               >
                 Explore this week&apos;s feature →
               </Link>
@@ -429,24 +458,24 @@ export default function HomePage() {
           scrollVelocity={scrollVelocity}
           scrollDirection={scrollDirection}
           imageUrl="/section-4.jpg"
+          isDesktop={isDesktop}
           title="New arrivals & slow perfume stories."
           subtitle="Fresh niche drops plus weekly deep dives."
           description="A rotating selection of new releases, paired with short, readable pieces about fragrance culture, notes and perfumers."
           onActive={i => {
-            currentIndexRef.current = i;
             setActiveScene(i);
             const el = document.getElementById("sceneSubtitle");
             if (el) el.textContent = sceneNames[i] ?? "";
           }}
         >
-          <div className="mt-4 grid grid-cols-3 gap-4 max-w-xl mx-auto">
+          <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 max-w-xl mx-auto">
             {newIn.map((p, i) => (
               <Link key={p.id} href={`/product/${p.id}`}>
                 <ThreeDCard delay={i * 0.15} />
               </Link>
             ))}
           </div>
-          <p className="text-[0.7rem] text-slate-200 max-w-xl mx-auto pt-2">
+          <p className="hidden md:block text-[0.7rem] text-slate-200 max-w-xl mx-auto pt-2">
             Imagine editorials like “Dark Gourmand explained” or “Why everyone
             secretly loves iso-e super” living just below this section.
           </p>

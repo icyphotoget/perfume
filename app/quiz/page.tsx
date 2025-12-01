@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { quizQuestions } from "@/lib/data";
 
 const baseVariants = {
@@ -14,6 +15,7 @@ const baseVariants = {
 export default function QuizPage() {
   const [index, setIndex] = useState(0);
   const total = quizQuestions.length;
+  const router = useRouter();
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 md:py-10">
@@ -91,7 +93,8 @@ export default function QuizPage() {
                     if (index < total - 1) {
                       setIndex(prev => prev + 1);
                     } else {
-                      setIndex(0); // reset; in real app -> show results page
+                      // ✅ After last question → go to results page (for now: mock results)
+                      router.push("/results");
                     }
                   }}
                   className="rounded-2xl bg-slate-900/70 border border-slate-700 px-4 py-3 text-left text-sm text-slate-200 hover:border-amberLux hover:text-amberLux transition"
@@ -104,7 +107,8 @@ export default function QuizPage() {
 
           <p className="text-[0.7rem] text-slate-500 text-center">
             In production, each option becomes a visual card with imagery
-            instead of plain text.
+            instead of plain text, and your answers will feed directly into the
+            recommendation engine behind the Results page.
           </p>
         </section>
       </motion.main>

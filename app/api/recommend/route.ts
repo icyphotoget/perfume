@@ -9,6 +9,7 @@ import {
   analyzeAnswersWithGroq,
   type StructuredProfile
 } from "@/lib/aiProfile";
+import { explainMatchWithGroq } from "@/lib/aiExplain";
 
 /**
  * POST /api/recommend
@@ -70,11 +71,31 @@ export async function POST(req: NextRequest) {
       structuredProfile
     });
 
+    // 🔮 Generate AI explanations for top N (e.g. 3) matches
+    const topForExplanation = results.slice(0, 3);
+    const explanationsById: Record<string, string> = {};
+
+    if (topForExplanation.length > 0) {
+      try {
+        const exps = await Promise.all(
+          topForExplanation.map(item =>
+            explainMatchWithGroq(structuredProfile, item.product)
+          )
+        );
+
+        topForExplanation.forEach((item, idx) => {
+          explanationsById[item.product.id] = exps[idx];
+        });
+      } catch (err) {
+        console.error("Error generating AI explanations:", err);
+      }
+    }
+
     return NextResponse.json(
       {
         input: {
-          ...payload,
-          // Uncomment if you want to see the AI profile in responses:
+          ...payload
+          // If you want to debug the AI profile, you can temporarily include:
           // structuredProfile,
         },
         count: results.length,
@@ -85,6 +106,7 @@ export async function POST(req: NextRequest) {
             name: v.name
           })),
           matchedKeywords: item.matchedKeywords,
+          explanation: explanationsById[item.product.id] ?? null,
           product: {
             id: item.product.id,
             name: item.product.name,
@@ -125,7 +147,6 @@ export async function GET() {
     limit: 3
   };
 
-  // For GET demo we skip Groq and just use basic scoring
   const results = recommendProducts(demoPayload);
 
   return NextResponse.json(

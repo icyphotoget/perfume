@@ -34,8 +34,9 @@ export default function ProductPageClient({ product }: Props) {
           <Link href="/quiz" className="hover:text-amberLux transition">
             AI Scent Stylist
           </Link>
-          <Link href="/checkout" className="hover:text-amberLux transition">
-            Cart
+          {/* Cart → Log in */}
+          <Link href="/login" className="hover:text-amberLux transition">
+            Log in
           </Link>
         </nav>
       </header>

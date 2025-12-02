@@ -3,12 +3,17 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+
+type AuthStatus = "loading" | "guest" | "user";
 
 export default function SmartHeader() {
   const [hidden, setHidden] = useState(false);
+  const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
   const pathname = usePathname();
+  const router = useRouter();
 
+  // scroll hide/show
   useEffect(() => {
     let lastScroll = 0;
     let timeout: any;
@@ -17,16 +22,13 @@ export default function SmartHeader() {
       const current = window.scrollY;
 
       if (current > lastScroll && current > 50) {
-        // scrolling down → hide
         setHidden(true);
       } else {
-        // scrolling up → show
         setHidden(false);
       }
 
       lastScroll = current;
 
-      // If user stops scrolling → show again after 200ms
       clearTimeout(timeout);
       timeout = setTimeout(() => setHidden(false), 200);
     };
@@ -35,9 +37,53 @@ export default function SmartHeader() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // provjera usera
+  useEffect(() => {
+    let canceled = false;
+
+    const checkAuth = async () => {
+      try {
+        const res = await fetch("/api/auth/user", {
+          method: "GET",
+          credentials: "include"
+        });
+
+        if (!canceled) {
+          if (res.ok) {
+            setAuthStatus("user");
+          } else {
+            setAuthStatus("guest");
+          }
+        }
+      } catch {
+        if (!canceled) setAuthStatus("guest");
+      }
+    };
+
+    checkAuth();
+
+    return () => {
+      canceled = true;
+    };
+  }, [pathname]); // na promjenu route-a ponovo provjerimo
+
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include"
+      });
+    } catch (e) {
+      // ignore
+    } finally {
+      router.push("/");
+      router.refresh();
+    }
   };
 
   return (
@@ -91,14 +137,36 @@ export default function SmartHeader() {
             >
               AI Scent Stylist
             </Link>
-            <Link
-              href="/checkout"
-              className={`hover:text-amberLux transition ${
-                isActive("/checkout") ? "text-amberLux" : ""
-              }`}
-            >
-              Cart
-            </Link>
+
+            {/* CONDITIONAL: Log in vs Profile/Logout */}
+            {authStatus === "user" ? (
+              <>
+                <Link
+                  href="/profile"
+                  className={`hover:text-amberLux transition ${
+                    isActive("/profile") ? "text-amberLux" : ""
+                  }`}
+                >
+                  Profile
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="hover:text-amberLux transition text-slate-400"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                className={`hover:text-amberLux transition ${
+                  isActive("/login") ? "text-amberLux" : ""
+                }`}
+              >
+                Log in
+              </Link>
+            )}
           </nav>
 
           {/* RIGHT: compact actions (mobile) */}
@@ -121,18 +189,39 @@ export default function SmartHeader() {
             >
               Lib
             </Link>
-            <Link
-              href="/checkout"
-              className={`px-2 py-1 rounded-2xl border border-slate-700/80 bg-black/40 hover:border-amberLux hover:text-amberLux transition ${
-                isActive("/checkout") ? "border-amberLux text-amberLux" : ""
-              }`}
-            >
-              Cart
-            </Link>
+
+            {authStatus === "user" ? (
+              <>
+                <Link
+                  href="/profile"
+                  className={`px-2 py-1 rounded-2xl border border-slate-700/80 bg-black/40 hover:border-amberLux hover:text-amberLux transition ${
+                    isActive("/profile") ? "border-amberLux text-amberLux" : ""
+                  }`}
+                >
+                  Me
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="px-2 py-1 rounded-2xl border border-slate-700/80 bg-black/40 hover:border-red-500 hover:text-red-300 transition"
+                >
+                  Out
+                </button>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                className={`px-2 py-1 rounded-2xl border border-slate-700/80 bg-black/40 hover:border-amberLux hover:text-amberLux transition ${
+                  isActive("/login") ? "border-amberLux text-amberLux" : ""
+                }`}
+              >
+                Log in
+              </Link>
+            )}
           </nav>
         </div>
 
-        {/* BOTTOM ROW: vibe segmented control (visible svugdje) */}
+        {/* BOTTOM ROW: vibe segmented control */}
         <div className="flex items-center justify-center">
           <div className="inline-flex w-full md:w-auto items-center gap-1 rounded-3xl bg-black/40 border border-slate-800/70 px-1 py-1 overflow-x-auto no-scrollbar">
             <Link

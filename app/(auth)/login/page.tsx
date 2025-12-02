@@ -1,20 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const supabase = createSupabaseBrowserClient();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const urlError = searchParams.get("error");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loadingEmail, setLoadingEmail] = useState(false);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
-  const [error, setError] = useState<string | null>(urlError);
+  const [error, setError] = useState<string | null>(null);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,7 +57,7 @@ export default function LoginPage() {
       console.error("Google login error:", error.message);
       setError("Google login failed, try again.");
     }
-    // Supabase sam radi redirect na Google i natrag
+    // Supabase će sam odraditi redirect na Google i nazad
   };
 
   return (

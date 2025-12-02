@@ -1,7 +1,14 @@
 // app/api/recommend/route.ts
 
 import { NextResponse, type NextRequest } from "next/server";
-import { recommendProducts, type RecommendRequest } from "@/lib/recommend";
+import {
+  recommendProducts,
+  type RecommendRequest
+} from "@/lib/recommend";
+import {
+  analyzeAnswersWithGroq,
+  type StructuredProfile
+} from "@/lib/aiProfile";
 
 /**
  * POST /api/recommend
@@ -20,7 +27,7 @@ export async function POST(req: NextRequest) {
   try {
     const json = (await req.json()) as Partial<RecommendRequest> | null;
 
-    if (!json || ( !json.answers && !json.selectedVibes)) {
+    if (!json || (!json.answers && !json.selectedVibes)) {
       return NextResponse.json(
         {
           error:
@@ -44,11 +51,32 @@ export async function POST(req: NextRequest) {
       limit: json.limit ?? 5
     };
 
-    const results = recommendProducts(payload);
+    // 🔮 Optional AI profile from Groq (hybrid mode)
+    let structuredProfile: StructuredProfile | undefined = undefined;
+
+    if (payload.answers && payload.answers.length > 0) {
+      try {
+        structuredProfile = await analyzeAnswersWithGroq(payload.answers);
+      } catch (err) {
+        console.error(
+          "Groq analysis failed, falling back to basic scoring:",
+          err
+        );
+      }
+    }
+
+    const results = recommendProducts({
+      ...payload,
+      structuredProfile
+    });
 
     return NextResponse.json(
       {
-        input: payload,
+        input: {
+          ...payload,
+          // Uncomment if you want to see the AI profile in responses:
+          // structuredProfile,
+        },
         count: results.length,
         results: results.map(item => ({
           score: Number(item.score.toFixed(3)),
@@ -85,7 +113,7 @@ export async function POST(req: NextRequest) {
 
 /**
  * Optionally support GET for quick debugging:
- * GET /api/recommend?demo=1
+ * GET /api/recommend
  */
 export async function GET() {
   const demoPayload: RecommendRequest = {
@@ -97,6 +125,7 @@ export async function GET() {
     limit: 3
   };
 
+  // For GET demo we skip Groq and just use basic scoring
   const results = recommendProducts(demoPayload);
 
   return NextResponse.json(

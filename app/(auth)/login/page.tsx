@@ -57,7 +57,7 @@ export default function LoginPage() {
       console.error("Google login error:", error.message);
       setError("Google login failed, try again.");
     }
-    // Supabase će sam odraditi redirect na Google i nazad
+    // Supabase sam radi redirect na Google i natrag
   };
 
   return (

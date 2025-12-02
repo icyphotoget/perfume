@@ -10,7 +10,6 @@ type AuthStatus = "loading" | "guest" | "user";
 export default function SmartHeader() {
   const [hidden, setHidden] = useState(false);
   const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
-  const [isAdmin, setIsAdmin] = useState(false); // 👈 NOVO
   const pathname = usePathname();
   const router = useRouter();
 
@@ -38,7 +37,7 @@ export default function SmartHeader() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // provjera usera + isAdmin
+  // provjera usera
   useEffect(() => {
     let canceled = false;
 
@@ -49,28 +48,15 @@ export default function SmartHeader() {
           credentials: "include"
         });
 
-        if (canceled) return;
-
-        if (!res.ok) {
-          setAuthStatus("guest");
-          setIsAdmin(false);
-          return;
-        }
-
-        const json = await res.json();
-
-        if (json?.user) {
-          setAuthStatus("user");
-          setIsAdmin(json.user.isAdmin === true);
-        } else {
-          setAuthStatus("guest");
-          setIsAdmin(false);
+        if (!canceled) {
+          if (res.ok) {
+            setAuthStatus("user");
+          } else {
+            setAuthStatus("guest");
+          }
         }
       } catch {
-        if (!canceled) {
-          setAuthStatus("guest");
-          setIsAdmin(false);
-        }
+        if (!canceled) setAuthStatus("guest");
       }
     };
 
@@ -79,7 +65,7 @@ export default function SmartHeader() {
     return () => {
       canceled = true;
     };
-  }, [pathname]); // promjena routea → ponovno provjeri
+  }, [pathname]);
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
@@ -152,18 +138,6 @@ export default function SmartHeader() {
               AI Scent Stylist
             </Link>
 
-            {/* 👇 ADMIN LINK SAMO ZA ADMINA */}
-            {authStatus === "user" && isAdmin && (
-              <Link
-                href="/profile/admin"
-                className={`hover:text-amberLux transition ${
-                  isActive("/profile/admin") ? "text-amberLux" : ""
-                }`}
-              >
-                Admin
-              </Link>
-            )}
-
             {/* CONDITIONAL: Log in vs Profile/Logout */}
             {authStatus === "user" ? (
               <>
@@ -215,20 +189,6 @@ export default function SmartHeader() {
             >
               Lib
             </Link>
-
-            {/* 👇 MOBILE ADMIN LINK */}
-            {authStatus === "user" && isAdmin && (
-              <Link
-                href="/profile/admin"
-                className={`px-2 py-1 rounded-2xl border border-slate-700/80 bg-black/40 hover:border-amberLux hover:text-amberLux transition ${
-                  isActive("/profile/admin")
-                    ? "border-amberLux text-amberLux"
-                    : ""
-                }`}
-              >
-                Admin
-              </Link>
-            )}
 
             {authStatus === "user" ? (
               <>
@@ -297,7 +257,6 @@ export default function SmartHeader() {
               In my feels / mood
             </Link>
 
-            {/* NOVA OPCIJA – posebna stranica */}
             <Link
               href="/take-me"
               className={`text-[0.7rem] md:text-xs px-3 py-1.5 rounded-2xl whitespace-nowrap transition ${
@@ -310,3 +269,7 @@ export default function SmartHeader() {
             </Link>
           </div>
         </div>
+      </div>
+    </motion.header>
+  );
+}

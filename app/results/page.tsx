@@ -1,5 +1,6 @@
 // app/results/page.tsx
 
+import { headers } from "next/headers";
 import ResultsPageClient from "@/components/results-page-client";
 
 type ResultsPageProps = {
@@ -33,8 +34,18 @@ export default async function ResultsPage({ searchParams }: ResultsPageProps) {
 
   const limit = searchParams.limit ? Number(searchParams.limit) || 3 : 3;
 
-  // 3) Call your AI recommendation API
-  const res = await fetch("/api/recommend", {
+  // 3) Build an absolute URL for the API (fixes "Failed to parse URL" error)
+  const headersList = headers();
+  const host =
+    headersList.get("x-forwarded-host") ?? headersList.get("host") ?? "localhost:3000";
+  const protocol =
+    headersList.get("x-forwarded-proto") ?? "http";
+  const baseUrl = `${protocol}://${host}`;
+
+  const apiUrl = `${baseUrl}/api/recommend`;
+
+  // 4) Call your AI recommendation API
+  const res = await fetch(apiUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"

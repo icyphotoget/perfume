@@ -1,24 +1,75 @@
+// app/product/[id]/page.tsx
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { products } from "@/lib/data";
 import ProductPageClient from "@/components/product-page-client";
+import type { Product } from "@/lib/data";
+import { supabaseStaticClient } from "@/lib/supabase/static";
 
-const siteUrl = "https://perfume.example.com"; // TODO: change to real domain
+const siteUrl = "https://perfume.example.com"; // TODO: promijeni na pravi domain
 
 type Props = {
   params: { id: string };
 };
 
-// ✅ STATIC PARAMS — Next will pre-generate all product pages
-export function generateStaticParams() {
-  return products.map(product => ({
-    id: product.id
+// 🔹 Helper koji čita 1 parfem iz Supabase i mappa ga na Product
+async function getProductById(id: string): Promise<Product | null> {
+  const { data, error } = await supabaseStaticClient
+    .from("perfumes")
+    .select(
+      `
+        id,
+        name,
+        house,
+        description,
+        vibe_tags,
+        longevity,
+        sillage,
+        base_price,
+        image_url
+      `
+    )
+    .eq("id", id)
+    .single();
+
+  if (error || !data) {
+    console.error("Product not found or Supabase error:", error);
+    return null;
+  }
+
+  const product: Product = {
+    id: data.id,
+    name: data.name,
+    house: data.house,
+    description: data.description ?? "",
+    vibeTags: data.vibe_tags ?? [],
+    longevity: data.longevity ?? 0,
+    sillage: data.sillage ?? 0,
+    basePrice: Number(data.base_price ?? 0),
+    imageUrl: data.image_url ?? null
+  };
+
+  return product;
+}
+
+// ✅ Pre-generiraj product stranice
+export async function generateStaticParams() {
+  const { data, error } = await supabaseStaticClient
+    .from("perfumes")
+    .select("id");
+
+  if (error || !data) {
+    console.error("Error in generateStaticParams:", error);
+    return [];
+  }
+
+  return data.map(p => ({
+    id: String(p.id)
   }));
 }
 
-// ✅ DYNAMIC METADATA PER PRODUCT
-export function generateMetadata({ params }: Props): Metadata {
-  const product = products.find(p => p.id === params.id);
+// ✅ Metadata po parfemu
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const product = await getProductById(params.id);
 
   if (!product) {
     return {
@@ -27,8 +78,8 @@ export function generateMetadata({ params }: Props): Metadata {
     };
   }
 
-  const url = `${siteUrl}/product/${product.id}`;
-  const description = product.description.slice(0, 150);
+  const url = `${siteUrl}/product/${params.id}`;
+  const description = (product.description ?? "").slice(0, 150);
 
   return {
     title: `${product.name} by ${product.house} | Niche Perfume Decant`,
@@ -41,7 +92,7 @@ export function generateMetadata({ params }: Props): Metadata {
       siteName: "Parfemi — Niche Perfume Discovery",
       images: [
         {
-          url: `${siteUrl}/og/product-${product.id}.jpg`, // placeholder
+          url: product.imageUrl || `${siteUrl}/og/product-${params.id}.jpg`,
           width: 1200,
           height: 630,
           alt: `${product.name} fragrance bottle`
@@ -56,9 +107,9 @@ export function generateMetadata({ params }: Props): Metadata {
   };
 }
 
-// ✅ SERVER COMPONENT WRAPPER
-export default function ProductPage({ params }: Props) {
-  const product = products.find(p => p.id === params.id);
+// ✅ Server komponenta
+export default async function ProductPage({ params }: Props) {
+  const product = await getProductById(params.id);
 
   if (!product) {
     notFound();

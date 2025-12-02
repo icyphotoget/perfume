@@ -1,6 +1,8 @@
+// components/product-page-client.tsx
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import type { Product } from "@/lib/data";
 import SaveToLibraryButton from "@/components/library/SaveToLibraryButton";
@@ -48,17 +50,34 @@ export default function ProductPageClient({ product }: Props) {
         <section className="grid md:grid-cols-[2.1fr,2fr] gap-6 items-start">
           {/* Visuals */}
           <div className="space-y-4">
-            <div className="relative rounded-3xl bg-gradient-to-br from-slate-200/10 via-slate-50/5 to-amberLux/15 h-72 md:h-96 shadow-lux-soft overflow-hidden">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.4),_transparent_55%)] mix-blend-screen" />
-              <div className="absolute inset-0 flex items-end justify-center pb-8">
-                <div className="h-48 w-24 md:h-64 md:w-28 rounded-3xl bg-gradient-to-b from-slate-100 to-slate-500 shadow-[0_25px_70px_rgba(0,0,0,0.85)] relative">
-                  <div className="absolute inset-x-4 top-6 h-6 rounded-full bg-amberLux/20 blur-md" />
-                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[0.55rem] tracking-[0.3em] uppercase text-slate-900 text-center px-1">
-                    {product.name}
+            {/* PRAVA SLIKA IZ SUPABASEA */}
+            {product.imageUrl && (
+              <div className="relative rounded-3xl overflow-hidden h-72 md:h-96 shadow-lux-soft">
+                <Image
+                  src={product.imageUrl}
+                  alt={product.name}
+                  fill
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
+              </div>
+            )}
+
+            {/* Ako nema slike, pokaži stiliziranu “fake bocu” */}
+            {!product.imageUrl && (
+              <div className="relative rounded-3xl bg-gradient-to-br from-slate-200/10 via-slate-50/5 to-amberLux/15 h-72 md:h-96 shadow-lux-soft overflow-hidden">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.4),_transparent_55%)] mix-blend-screen" />
+                <div className="absolute inset-0 flex items-end justify-center pb-8">
+                  <div className="h-48 w-24 md:h-64 md:w-28 rounded-3xl bg-gradient-to-b from-slate-100 to-slate-500 shadow-[0_25px_70px_rgba(0,0,0,0.85)] relative">
+                    <div className="absolute inset-x-4 top-6 h-6 rounded-full bg-amberLux/20 blur-md" />
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[0.55rem] tracking-[0.3em] uppercase text-slate-900 text-center px-1">
+                      {product.name}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
+
             <div className="flex gap-2">
               <div className="flex-1 h-16 rounded-2xl bg-fog/80 border border-slate-800 text-[0.7rem] text-slate-400 flex items-center justify-center">
                 TikTok-style review clip 01
@@ -126,7 +145,7 @@ export default function ProductPageClient({ product }: Props) {
               </div>
             </div>
 
-            {/* Decant selector (mock) + Save to Library */}
+            {/* Decant selector + Save to Library */}
             <div className="space-y-3">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
                 Choose your decant
@@ -155,7 +174,6 @@ export default function ProductPageClient({ product }: Props) {
                 your cart and take you to checkout.
               </p>
 
-              {/* 🔥 Save to Library button */}
               <div className="pt-2">
                 <SaveToLibraryButton
                   perfumeId={product.id}

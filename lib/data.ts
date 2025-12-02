@@ -40,10 +40,10 @@ export type Product = {
   house: string;
   description: string;
   vibeTags: string[];
-  longevity: number; // 1–10
-  sillage: number; // 1–10
-  vibeSlug: string;
-  basePrice: number;
+  longevity: number; // 0–10
+  sillage: number;   // 0–10
+  basePrice: number; // €
+  imageUrl?: string | null;
 };
 
 export const products: Product[] = [

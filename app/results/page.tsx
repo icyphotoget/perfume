@@ -24,7 +24,7 @@ export default async function ResultsPage({ searchParams }: ResultsPageProps) {
     }
   }
 
-  // 2) Parse selected vibes from query string ("a,b,c")
+  // 2) Parse selected vibes from query string ("a,b,c") – optional for later
   const selectedVibes =
     searchParams.vibes
       ?.split(",")
@@ -34,41 +34,33 @@ export default async function ResultsPage({ searchParams }: ResultsPageProps) {
   const limit = searchParams.limit ? Number(searchParams.limit) || 3 : 3;
 
   // 3) Call your AI recommendation API
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/api/recommend`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      // If both arrays are empty, the API will return 400,
-      // so we provide a fallback demo payload:
-      body: JSON.stringify(
-        answers.length > 0 || selectedVibes.length > 0
-          ? { answers, selectedVibes, limit }
-          : {
-              answers: [
-                "I like dark, moody, evening scents with velvet and smoke.",
-                "I read books alone when it rains."
-              ],
-              selectedVibes: ["moody-introvert"],
-              limit
-            }
-      ),
-      cache: "no-store"
-    }
-  );
+  const res = await fetch("/api/recommend", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(
+      answers.length > 0 || selectedVibes.length > 0
+        ? { answers, selectedVibes, limit }
+        : {
+            answers: [
+              "I like dark, moody, evening scents with velvet and smoke.",
+              "I read books alone when it rains."
+            ],
+            selectedVibes: ["moody-introvert"],
+            limit
+          }
+    ),
+    cache: "no-store"
+  });
 
   if (!res.ok) {
-    // In case of error, you can choose to render some fallback UI
-    // For now, just show an empty state to the client component
     console.error("Failed to fetch recommendations:", await res.text());
     return <ResultsPageClient items={[]} />;
   }
 
   const data = await res.json();
 
-  // 4) Map API results into items expected by ResultsPageClient
   const items =
     (data.results ?? []).map((r: any) => ({
       id: r.product.id,
@@ -77,7 +69,6 @@ export default async function ResultsPage({ searchParams }: ResultsPageProps) {
       description: r.product.description,
       score: r.score ?? 0.75,
       vibeTags: r.product.vibeTags ?? [],
-      // If AI explanation exists, use it. Otherwise build a generic vibe sentence.
       vibeSentence:
         r.explanation ??
         "a vibe-aligned extension of how you already move through the world.",

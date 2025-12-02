@@ -244,8 +244,8 @@ export default function HomeSlider({ products }: HomeSliderProps) {
             {featured && (
               <div className="flex flex-col items-center gap-3 pt-1">
                 <p className="text-[0.7rem] text-slate-200">
-                  Vibe tags: {(featured.vibe_tags ?? []).join(" • ")}
-                </p>
+  Vibe tags: {(featured.vibeTags || []).join(" • ")}
+</p>
                 <Link
                   href={`/product/${featured.id}`}
                   className="inline-flex items-center justify-center px-4 md:px-6 py-1.5 md:py-2.5 rounded-3xl border border-amberLux text-amberLux text-[0.7rem] md:text-xs bg-black/40 backdrop-blur-sm hover:bg-amberLux hover:text-ink transition"

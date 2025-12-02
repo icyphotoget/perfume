@@ -3,9 +3,10 @@ import { cookies } from "next/headers";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
 export function createSupabaseServerClient() {
-  const cookieStore = cookies(); // ✅ sada se poziva unutar funkcije
+  // 👇 cookies() se sada POZIVA SAMO UNUTAR FUNKCIJE
+  const cookieStore = cookies();
 
-  return createServerClient(
+  const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -31,4 +32,6 @@ export function createSupabaseServerClient() {
       }
     }
   );
+
+  return supabase;
 }

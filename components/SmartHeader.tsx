@@ -78,18 +78,21 @@ export default function SmartHeader() {
           </Link>
         </div>
 
-        {/* RIGHT: Nav links – na vrlo malom ekranu se mogu prelomiti u drugi red */}
-        <nav className="flex items-center gap-4 text-[0.7rem] md:text-xs uppercase text-slate-400">
-          <Link href="/" className="hover:text-amberLux transition">
-            Home
-          </Link>
-          <Link href="/quiz" className="hover:text-amberLux transition">
-            AI Scent Stylist
-          </Link>
-          <Link href="/checkout" className="hover:text-amberLux transition">
-            Cart
-          </Link>
-        </nav>
+    {/* RIGHT: Nav links */}
+<nav className="hidden md:flex items-center gap-6 text-xs uppercase text-slate-400">
+  <Link href="/" className="hover:text-amberLux transition">
+    Home
+  </Link>
+  <Link href="/profile/library" className="hover:text-amberLux transition">
+    My Library
+  </Link>
+  <Link href="/quiz" className="hover:text-amberLux transition">
+    AI Scent Stylist
+  </Link>
+  <Link href="/checkout" className="hover:text-amberLux transition">
+    Cart
+  </Link>
+</nav>
       </div>
     </motion.header>
   );

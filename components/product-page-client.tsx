@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import type { Product } from "@/lib/data";
+import SaveToLibraryButton from "@/components/library/SaveToLibraryButton";
 
 const baseVariants = {
   initial: { opacity: 0, y: 20, scale: 0.98 },
@@ -52,7 +53,7 @@ export default function ProductPageClient({ product }: Props) {
               <div className="absolute inset-0 flex items-end justify-center pb-8">
                 <div className="h-48 w-24 md:h-64 md:w-28 rounded-3xl bg-gradient-to-b from-slate-100 to-slate-500 shadow-[0_25px_70px_rgba(0,0,0,0.85)] relative">
                   <div className="absolute inset-x-4 top-6 h-6 rounded-full bg-amberLux/20 blur-md" />
-                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[0.55rem] tracking-[0.3em] uppercase text-slate-900">
+                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[0.55rem] tracking-[0.3em] uppercase text-slate-900 text-center px-1">
                     {product.name}
                   </div>
                 </div>
@@ -81,6 +82,7 @@ export default function ProductPageClient({ product }: Props) {
                 {product.vibeTags.join(" • ")}
               </p>
             </div>
+
             <p className="text-sm md:text-base text-slate-300">
               {product.description}
             </p>
@@ -124,7 +126,7 @@ export default function ProductPageClient({ product }: Props) {
               </div>
             </div>
 
-            {/* Decant selector (mock) */}
+            {/* Decant selector (mock) + Save to Library */}
             <div className="space-y-3">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
                 Choose your decant
@@ -152,6 +154,14 @@ export default function ProductPageClient({ product }: Props) {
                 In the real build, selecting a size would add this decant to
                 your cart and take you to checkout.
               </p>
+
+              {/* 🔥 Save to Library button */}
+              <div className="pt-2">
+                <SaveToLibraryButton
+                  perfumeId={product.id}
+                  perfumeName={product.name}
+                />
+              </div>
             </div>
           </div>
         </section>

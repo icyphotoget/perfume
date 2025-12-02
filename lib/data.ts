@@ -44,7 +44,11 @@ export type Product = {
   sillage: number;   // 0–10
   basePrice: number; // €
   imageUrl?: string | null;
+  vibeSlug?: string; // <--- DODANO, optional
 };
+
+// ako želiš, možeš ostaviti ili maknuti hardkodirane products
+export const products: Product[] = [];
 
 export const products: Product[] = [
   {

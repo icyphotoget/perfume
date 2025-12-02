@@ -43,12 +43,9 @@ export type Product = {
   longevity: number; // 0–10
   sillage: number;   // 0–10
   basePrice: number; // €
-  imageUrl?: string | null;
-  vibeSlug?: string; // <--- DODANO, optional
+  vibeSlug?: string; // ⬅ dodano (koristiš ga u recommend + mock data)
+  imageUrl?: string | null; // ⬅ dodano (za slike s product pagea)
 };
-
-// ako želiš, možeš ostaviti ili maknuti hardkodirane products
-export const products: Product[] = [];
 
 export const products: Product[] = [
   {
@@ -62,6 +59,7 @@ export const products: Product[] = [
     sillage: 8,
     vibeSlug: "moody-introvert",
     basePrice: 32
+    // imageUrl: "/demo/velvet-smoke.jpg" // po želji
   },
   {
     id: "paris-midnight-rose",
@@ -74,6 +72,7 @@ export const products: Product[] = [
     sillage: 7,
     vibeSlug: "date-night-in-paris",
     basePrice: 29
+    // imageUrl: "/demo/paris-midnight-rose.jpg"
   },
   {
     id: "heritage-cashmere",
@@ -86,6 +85,7 @@ export const products: Product[] = [
     sillage: 6,
     vibeSlug: "old-money-weekend",
     basePrice: 34
+    // imageUrl: "/demo/heritage-cashmere.jpg"
   }
 ];
 

@@ -1,18 +1,25 @@
+// app/layout.tsx
 import "./globals.css";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import SmartHeader from "@/components/SmartHeader";
-import SupabaseSessionInitializer from "@/components/auth/SupabaseSessionInitializer";
 
-export default function RootLayout({
-  children
-}: {
-  children: React.ReactNode;
-}) {
+export const metadata = {
+  title: "Parfemi",
+  description: "Perfume discovery platform",
+};
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // SERVER-SIDE SESSION — jedini ispravni način
+  const supabase = createSupabaseServerClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
   return (
     <html lang="en">
-      <body className="bg-ink text-slate-50">
-        {/* Ovo se mounta na SVAKOJ stranici i hvata OAuth callback */}
-        <SupabaseSessionInitializer />
-        <SmartHeader />
+      <body>
+        {/* Inject session to client via context */}
+        <SmartHeader serverSession={session} />
         {children}
       </body>
     </html>

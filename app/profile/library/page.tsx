@@ -28,13 +28,16 @@ export default function LibraryPage() {
 
   useEffect(() => {
     const load = async () => {
-      // --- 1) Load user session ---
+      // 1) user
       const {
         data: { user },
         error
       } = await supabase.auth.getUser();
 
-      if (error) console.error("Error getting user:", error);
+      if (error) {
+        console.error("Error getting user:", error);
+      }
+
       if (!user) {
         setUser(null);
         setLoading(false);
@@ -43,7 +46,7 @@ export default function LibraryPage() {
 
       setUser(user);
 
-      // --- 2) Load saved perfumes ---
+      // 2) library items
       const { data, error: libError } = await supabase
         .from("library_items")
         .select(
@@ -66,7 +69,6 @@ export default function LibraryPage() {
       if (libError) {
         console.error("Error loading items:", libError);
       } else if (data) {
-        // Normalize perfumes[] → perfumes object
         const normalized: LibraryItem[] = data.map((row: any) => {
           const arr = row.perfumes;
           const perfume = Array.isArray(arr) ? arr[0] ?? null : arr ?? null;
@@ -96,36 +98,48 @@ export default function LibraryPage() {
     load();
   }, [supabase]);
 
-  // --- Loading state ---
+  // LOADING
   if (loading) {
     return (
-      <main className="max-w-4xl mx-auto px-4 py-10">
+      <main className="min-h-[60vh] max-w-4xl mx-auto px-4 py-10 flex items-center justify-center">
         <p className="text-sm text-slate-400">Loading your library…</p>
       </main>
     );
   }
 
-  // --- User not logged in ---
+  // NOT LOGGED IN
   if (!user) {
     return (
-      <main className="max-w-4xl mx-auto px-4 py-10 space-y-3">
-        <h1 className="text-2xl font-light text-slate-50">Your perfume library</h1>
-        <p className="text-sm text-slate-400">
-          You need to{" "}
-          <Link href="/login" className="text-amberLux underline">
-            log in
-          </Link>{" "}
-          to see saved perfumes.
-        </p>
+      <main className="min-h-[60vh] max-w-4xl mx-auto px-4 py-10 flex flex-col items-center justify-center gap-4">
+        <div className="text-center space-y-2">
+          <h1 className="text-2xl font-light text-slate-50">
+            Your perfume library
+          </h1>
+          <p className="text-sm text-slate-400">
+            You need to{" "}
+            <Link href="/login" className="text-amberLux underline">
+              log in
+            </Link>{" "}
+            to see saved perfumes.
+          </p>
+        </div>
       </main>
     );
   }
 
-  // --- Show saved perfumes ---
+  // LOGGED IN – MAIN VIEW
   return (
     <main className="max-w-4xl mx-auto px-4 py-10 space-y-6">
+      {/* header row */}
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-light text-slate-50">Your perfume library</h1>
+        <div className="space-y-1">
+          <h1 className="text-2xl font-light text-slate-50">
+            Your perfume library
+          </h1>
+          <p className="text-xs text-slate-500">
+            Save perfumes you&apos;re testing, craving or already own.
+          </p>
+        </div>
         <Link
           href="/"
           className="text-xs text-slate-400 hover:text-amberLux transition"
@@ -134,20 +148,44 @@ export default function LibraryPage() {
         </Link>
       </div>
 
+      {/* EMPTY STATE */}
       {items.length === 0 ? (
-        <p className="text-sm text-slate-400">
-          You haven't saved any perfumes yet. Browse{" "}
-          <Link href="/" className="text-amberLux underline">
-            the front page
-          </Link>{" "}
-          or{" "}
-          <Link href="/quiz" className="text-amberLux underline">
-            run the AI Scent Stylist
-          </Link>{" "}
-          to discover your signature scents.
-        </p>
+        <section className="min-h-[40vh] flex items-center justify-center">
+          <div className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-950/70 px-6 py-7 shadow-[0_24px_60px_rgba(0,0,0,0.8)] text-center space-y-4">
+            <div className="flex items-center justify-center">
+              <div className="h-10 w-10 rounded-full bg-amberLux/15 border border-amberLux/60 flex items-center justify-center text-lg">
+                ⭐
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-lg font-light text-slate-50">
+                Your shelf is still empty.
+              </h2>
+              <p className="text-sm text-slate-400">
+                Run the AI Scent Stylist or browse vibes, then tap{" "}
+                <span className="text-amberLux">“Save to library”</span> on any
+                perfume you want to keep on your radar.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+              <Link
+                href="/quiz"
+                className="inline-flex items-center justify-center rounded-3xl px-4 py-2.5 text-xs font-medium bg-gradient-to-r from-amberLux to-softGold text-ink shadow-lux-soft hover:opacity-95 transition"
+              >
+                Start AI Scent Stylist
+              </Link>
+              <Link
+                href="/"
+                className="inline-flex items-center justify-center rounded-3xl px-4 py-2.5 text-xs border border-slate-700/80 text-slate-200 hover:border-amberLux/70 hover:text-amberLux transition bg-fog/40 backdrop-blur-xs"
+              >
+                Browse aesthetic sections
+              </Link>
+            </div>
+          </div>
+        </section>
       ) : (
-        <div className="grid md:grid-cols-2 gap-4">
+        // LISTA ITEMA
+        <section className="grid md:grid-cols-2 gap-4">
           {items.map(entry => {
             const p = entry.perfumes;
             if (!p) return null;
@@ -162,7 +200,9 @@ export default function LibraryPage() {
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
                     {p.house}
                   </p>
-                  <h2 className="text-sm md:text-base text-slate-50">{p.name}</h2>
+                  <h2 className="text-sm md:text-base text-slate-50">
+                    {p.name}
+                  </h2>
 
                   {p.vibe_tags && (
                     <p className="text-[0.7rem] text-slate-400">
@@ -176,12 +216,13 @@ export default function LibraryPage() {
                 </div>
 
                 <p className="text-[0.65rem] text-slate-500 mt-3">
-                  Saved on {new Date(entry.created_at).toLocaleDateString("en-GB")}
+                  Saved on{" "}
+                  {new Date(entry.created_at).toLocaleDateString("en-GB")}
                 </p>
               </Link>
             );
           })}
-        </div>
+        </section>
       )}
     </main>
   );

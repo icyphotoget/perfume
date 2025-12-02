@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { usePathname, useRouter } from "next/navigation";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type AuthStatus = "loading" | "guest" | "user";
 
@@ -12,6 +13,9 @@ export default function SmartHeader() {
   const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
   const pathname = usePathname();
   const router = useRouter();
+
+  // jedan Supabase client za ovaj header
+  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 
   // scroll hide/show
   useEffect(() => {
@@ -37,25 +41,26 @@ export default function SmartHeader() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // provjera usera
+  // ➜ inicijalno provjeri usera (nema više fetch /api/auth/user)
   useEffect(() => {
     let canceled = false;
 
     const checkAuth = async () => {
       try {
-        const res = await fetch("/api/auth/user", {
-          method: "GET",
-          credentials: "include"
-        });
+        const {
+          data: { user },
+          error
+        } = await supabase.auth.getUser();
+
+        if (error) {
+          console.error("Error getting user in header:", error.message);
+        }
 
         if (!canceled) {
-          if (res.ok) {
-            setAuthStatus("user");
-          } else {
-            setAuthStatus("guest");
-          }
+          setAuthStatus(user ? "user" : "guest");
         }
-      } catch {
+      } catch (e) {
+        console.error("Unexpected auth error in header:", e);
         if (!canceled) setAuthStatus("guest");
       }
     };
@@ -65,7 +70,20 @@ export default function SmartHeader() {
     return () => {
       canceled = true;
     };
-  }, [pathname]); // na promjenu route-a ponovo provjerimo
+  }, [supabase]);
+
+  // ➜ slušaj promjene auth state-a (login/logout) da se header odmah osvježi
+  useEffect(() => {
+    const {
+      data: { subscription }
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthStatus(session ? "user" : "guest");
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [supabase]);
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
@@ -74,12 +92,9 @@ export default function SmartHeader() {
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include"
-      });
+      await supabase.auth.signOut();
     } catch (e) {
-      // ignore
+      console.error("Logout error:", e);
     } finally {
       router.push("/");
       router.refresh();

@@ -1,30 +1,30 @@
-// app/(auth)/register/actions.ts
 "use server";
 
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export async function registerAction(formData: FormData) {
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
-  const username = formData.get("username") as string;
+export async function registerAction(formData: FormData): Promise<void> {
+  const email = String(formData.get("email") ?? "");
+  const password = String(formData.get("password") ?? "");
+  const username = String(formData.get("username") ?? "");
 
   const supabase = createSupabaseServerClient();
 
   const { data, error } = await supabase.auth.signUp({
     email,
-    password,
+    password
   });
 
   if (error) {
-    return { error: error.message };
+    console.error("Register error:", error.message);
+    redirect(`/register?error=${encodeURIComponent("Registration failed")}`);
   }
 
   const user = data.user;
   if (user) {
     await supabase.from("profiles").insert({
       id: user.id,
-      username,
+      username
     });
   }
 

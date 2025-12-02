@@ -1,22 +1,23 @@
-// app/(auth)/login/actions.ts
 "use server";
 
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export async function loginAction(formData: FormData) {
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
+export async function loginAction(formData: FormData): Promise<void> {
+  const email = String(formData.get("email") ?? "");
+  const password = String(formData.get("password") ?? "");
 
   const supabase = createSupabaseServerClient();
 
   const { error } = await supabase.auth.signInWithPassword({
     email,
-    password,
+    password
   });
 
   if (error) {
-    return { error: error.message };
+    console.error("Login error:", error.message);
+    // jednostavan način: redirect nazad na login s query paramom
+    redirect(`/login?error=${encodeURIComponent("Invalid email or password")}`);
   }
 
   redirect("/");

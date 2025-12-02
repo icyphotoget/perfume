@@ -1,15 +1,16 @@
+// app/product/[id]/page.tsx
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ProductPageClient from "@/components/product-page-client";
 import { getAllPerfumes, getPerfumeById } from "@/lib/perfumes";
 
-const siteUrl = "https://perfumai.vercel.app"; // stavi svoj pravi domain
+const siteUrl = "https://perfume.example.com"; // promijeni na pravi domain
 
 type Props = {
   params: { id: string };
 };
 
-// Next će pre-generirati statičke product pageove za sve parfeme iz baze
+// ✅ SSG parametri – koriste static Supabase client (bez cookies)
 export async function generateStaticParams() {
   const perfumes = await getAllPerfumes();
 
@@ -18,7 +19,7 @@ export async function generateStaticParams() {
   }));
 }
 
-// Dinamički metadata per parfem
+// ✅ Dynamic metadata per product – opet koristi static client
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const product = await getPerfumeById(params.id);
 
@@ -43,9 +44,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       siteName: "Parfemi — Niche Perfume Discovery",
       images: [
         {
-          url:
-            product.imageUrl ??
-            `${siteUrl}/og/product-${product.id}.jpg`,
+          url: product.imageUrl ?? `${siteUrl}/og/product-${product.id}.jpg`,
           width: 1200,
           height: 630,
           alt: `${product.name} fragrance bottle`
@@ -60,6 +59,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+// ✅ Server component – također koristi static client (SSG friendly)
 export default async function ProductPage({ params }: Props) {
   const product = await getPerfumeById(params.id);
 

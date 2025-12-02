@@ -1,30 +1,13 @@
 // lib/perfumes.ts
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { Product } from "@/lib/data";
-
-// helper – mapiramo DB row u Product tip iz lib/data.ts
-function mapRowToProduct(row: any): Product {
-  return {
-    id: row.id,
-    name: row.name,
-    house: row.house ?? "",
-    description: row.description ?? "",
-    vibeTags: (row.vibe_tags ?? []) as string[],
-    longevity: row.longevity ?? 0,
-    sillage: row.sillage ?? 0,
-    basePrice: row.base_price ?? 0,
-    imageUrl: row.image_url ?? null
-  };
-}
+import type { Product } from "./data";
+import { supabaseStatic } from "./supabase/static";
 
 /**
- * Dohvati SVE parfeme iz Supabase `perfumes` tablice.
- * Možeš po želji promijeniti order (po nazivu, house, datumu…)
+ * Dohvati sve parfeme (za homepage, generateStaticParams itd.)
+ * Ovo je SAFE za SSG jer ne koristi cookies.
  */
 export async function getAllPerfumes(): Promise<Product[]> {
-  const supabase = createSupabaseServerClient();
-
-  const { data, error } = await supabase
+  const { data, error } = await supabaseStatic
     .from("perfumes")
     .select(
       `
@@ -32,34 +15,41 @@ export async function getAllPerfumes(): Promise<Product[]> {
       name,
       house,
       description,
-      image_url,
       vibe_tags,
       longevity,
       sillage,
-      base_price
+      base_price,
+      image_url
     `
     )
     .order("name", { ascending: true });
 
   if (error) {
-    console.error("Error loading perfumes from Supabase:", error.message);
+    console.error("Error loading perfumes:", error);
     return [];
   }
 
   if (!data) return [];
 
-  return data.map(mapRowToProduct);
+  return data.map(row => ({
+    id: row.id,
+    name: row.name,
+    house: row.house,
+    description: row.description,
+    vibeTags: row.vibe_tags ?? [],
+    longevity: row.longevity ?? 0,
+    sillage: row.sillage ?? 0,
+    basePrice: row.base_price ?? 0,
+    imageUrl: row.image_url ?? null
+  }));
 }
 
 /**
- * Dohvati jedan parfem po id-u.
+ * Dohvati jedan parfem po ID-u (za /product/[id]).
+ * SAFE za SSG – nema cookies().
  */
-export async function getPerfumeById(
-  id: string
-): Promise<Product | null> {
-  const supabase = createSupabaseServerClient();
-
-  const { data, error } = await supabase
+export async function getPerfumeById(id: string): Promise<Product | null> {
+  const { data, error } = await supabaseStatic
     .from("perfumes")
     .select(
       `
@@ -67,22 +57,32 @@ export async function getPerfumeById(
       name,
       house,
       description,
-      image_url,
       vibe_tags,
       longevity,
       sillage,
-      base_price
+      base_price,
+      image_url
     `
     )
     .eq("id", id)
-    .maybeSingle(); // vrati null ako ne postoji
+    .maybeSingle();
 
   if (error) {
-    console.error("Error loading single perfume:", error.message);
+    console.error("Error loading perfume by id:", error);
     return null;
   }
 
   if (!data) return null;
 
-  return mapRowToProduct(data);
+  return {
+    id: data.id,
+    name: data.name,
+    house: data.house,
+    description: data.description,
+    vibeTags: data.vibe_tags ?? [],
+    longevity: data.longevity ?? 0,
+    sillage: data.sillage ?? 0,
+    basePrice: data.base_price ?? 0,
+    imageUrl: data.image_url ?? null
+  };
 }

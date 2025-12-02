@@ -1,21 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { usePathname, useRouter } from "next/navigation";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type AuthStatus = "loading" | "guest" | "user";
 
 export default function SmartHeader() {
   const [hidden, setHidden] = useState(false);
   const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
+  const [isAdmin, setIsAdmin] = useState(false); // 👈 NOVO
   const pathname = usePathname();
   const router = useRouter();
-
-  // jedan Supabase client za ovaj header
-  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 
   // scroll hide/show
   useEffect(() => {
@@ -41,27 +38,39 @@ export default function SmartHeader() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // ➜ inicijalno provjeri usera (nema više fetch /api/auth/user)
+  // provjera usera + isAdmin
   useEffect(() => {
     let canceled = false;
 
     const checkAuth = async () => {
       try {
-        const {
-          data: { user },
-          error
-        } = await supabase.auth.getUser();
+        const res = await fetch("/api/auth/user", {
+          method: "GET",
+          credentials: "include"
+        });
 
-        if (error) {
-          console.error("Error getting user in header:", error.message);
+        if (canceled) return;
+
+        if (!res.ok) {
+          setAuthStatus("guest");
+          setIsAdmin(false);
+          return;
         }
 
+        const json = await res.json();
+
+        if (json?.user) {
+          setAuthStatus("user");
+          setIsAdmin(json.user.isAdmin === true);
+        } else {
+          setAuthStatus("guest");
+          setIsAdmin(false);
+        }
+      } catch {
         if (!canceled) {
-          setAuthStatus(user ? "user" : "guest");
+          setAuthStatus("guest");
+          setIsAdmin(false);
         }
-      } catch (e) {
-        console.error("Unexpected auth error in header:", e);
-        if (!canceled) setAuthStatus("guest");
       }
     };
 
@@ -70,20 +79,7 @@ export default function SmartHeader() {
     return () => {
       canceled = true;
     };
-  }, [supabase]);
-
-  // ➜ slušaj promjene auth state-a (login/logout) da se header odmah osvježi
-  useEffect(() => {
-    const {
-      data: { subscription }
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAuthStatus(session ? "user" : "guest");
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [supabase]);
+  }, [pathname]); // promjena routea → ponovno provjeri
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
@@ -92,9 +88,12 @@ export default function SmartHeader() {
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include"
+      });
     } catch (e) {
-      console.error("Logout error:", e);
+      // ignore
     } finally {
       router.push("/");
       router.refresh();
@@ -153,6 +152,18 @@ export default function SmartHeader() {
               AI Scent Stylist
             </Link>
 
+            {/* 👇 ADMIN LINK SAMO ZA ADMINA */}
+            {authStatus === "user" && isAdmin && (
+              <Link
+                href="/profile/admin"
+                className={`hover:text-amberLux transition ${
+                  isActive("/profile/admin") ? "text-amberLux" : ""
+                }`}
+              >
+                Admin
+              </Link>
+            )}
+
             {/* CONDITIONAL: Log in vs Profile/Logout */}
             {authStatus === "user" ? (
               <>
@@ -204,6 +215,20 @@ export default function SmartHeader() {
             >
               Lib
             </Link>
+
+            {/* 👇 MOBILE ADMIN LINK */}
+            {authStatus === "user" && isAdmin && (
+              <Link
+                href="/profile/admin"
+                className={`px-2 py-1 rounded-2xl border border-slate-700/80 bg-black/40 hover:border-amberLux hover:text-amberLux transition ${
+                  isActive("/profile/admin")
+                    ? "border-amberLux text-amberLux"
+                    : ""
+                }`}
+              >
+                Admin
+              </Link>
+            )}
 
             {authStatus === "user" ? (
               <>

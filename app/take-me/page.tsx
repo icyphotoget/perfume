@@ -1,6 +1,5 @@
 // app/take-me/page.tsx
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { vibes } from "@/lib/data";
 
 export const metadata = {
@@ -9,22 +8,11 @@ export const metadata = {
     "Let Parfemi take you straight to a mood, a season or AI-picked perfumes that match your current vibe."
 };
 
-const baseVariants = {
-  initial: { opacity: 0, y: 20, scale: 0.98 },
-  animate: { opacity: 1, y: 0, scale: 1 }
-};
-
 export default function TakeMePage() {
   return (
     <div className="max-w-6xl mx-auto px-4 pt-28 pb-16 space-y-10">
       {/* Hero */}
-      <motion.section
-        variants={baseVariants}
-        initial="initial"
-        animate="animate"
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className="space-y-4"
-      >
+      <section className="space-y-4">
         <p className="text-[0.65rem] uppercase tracking-[0.24em] text-slate-500">
           Take me to…
         </p>
@@ -105,16 +93,10 @@ export default function TakeMePage() {
             </p>
           </Link>
         </div>
-      </motion.section>
+      </section>
 
       {/* Vibes preview grid */}
-      <motion.section
-        variants={baseVariants}
-        initial="initial"
-        animate="animate"
-        transition={{ duration: 0.6, ease: "easeOut", delay: 0.08 }}
-        className="space-y-4"
-      >
+      <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm md:text-base uppercase tracking-[0.22em] text-slate-400">
             Or take me to a specific vibe
@@ -151,7 +133,7 @@ export default function TakeMePage() {
             </Link>
           ))}
         </div>
-      </motion.section>
+      </section>
     </div>
   );
 }

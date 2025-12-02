@@ -274,6 +274,7 @@ export default function SmartHeader() {
             >
               Aesthetic sections
             </Link>
+
             <Link
               href="/seasonal"
               className={`text-[0.7rem] md:text-xs px-3 py-1.5 rounded-2xl whitespace-nowrap transition ${
@@ -284,6 +285,7 @@ export default function SmartHeader() {
             >
               Seasonal vibes
             </Link>
+
             <Link
               href="/feels"
               className={`text-[0.7rem] md:text-xs px-3 py-1.5 rounded-2xl whitespace-nowrap transition ${
@@ -294,9 +296,17 @@ export default function SmartHeader() {
             >
               In my feels / mood
             </Link>
+
+            {/* NOVA OPCIJA – posebna stranica */}
+            <Link
+              href="/take-me"
+              className={`text-[0.7rem] md:text-xs px-3 py-1.5 rounded-2xl whitespace-nowrap transition ${
+                isActive("/take-me")
+                  ? "bg-amberLux text-ink"
+                  : "text-slate-300 hover:text-amberLux hover:bg-slate-900/60"
+              }`}
+            >
+              Take me to…
+            </Link>
           </div>
         </div>
-      </div>
-    </motion.header>
-  );
-}

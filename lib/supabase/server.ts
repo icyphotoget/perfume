@@ -1,12 +1,11 @@
 // lib/supabase/server.ts
 import { cookies } from "next/headers";
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
 export function createSupabaseServerClient() {
-  // cookies() SE MORA pozivati unutar funkcije – ne u module scope-u
-  const cookieStore = cookies();
+  const cookieStore = cookies(); // ✅ sada se poziva unutar funkcije
 
-  const supabase = createServerClient(
+  return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -14,16 +13,22 @@ export function createSupabaseServerClient() {
         get(name: string) {
           return cookieStore.get(name)?.value;
         },
-        set(name: string, value: string, options: any) {
-          // Next 14: cookies su "mutable" na serveru
-          cookieStore.set({ name, value, ...options });
+        set(name: string, value: string, options: CookieOptions) {
+          cookieStore.set({
+            name,
+            value,
+            ...options
+          });
         },
-        remove(name: string, options: any) {
-          cookieStore.set({ name, value: "", ...options, maxAge: 0 });
+        remove(name: string, options: CookieOptions) {
+          cookieStore.set({
+            name,
+            value: "",
+            ...options,
+            maxAge: 0
+          });
         }
       }
     }
   );
-
-  return supabase;
 }

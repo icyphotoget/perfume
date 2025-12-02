@@ -26,7 +26,7 @@ export default function LibraryPage() {
 
   useEffect(() => {
     const load = async () => {
-      // 1) user iz browser sessiona (ovo vidi Google login)
+      // 1) user iz browser sessiona
       const {
         data: { user },
         error
@@ -44,7 +44,7 @@ export default function LibraryPage() {
 
       setUser(user);
 
-      // 2) library items
+      // 2) library items + povezani parfemi
       const { data, error: libError } = await supabase
         .from("library_items")
         .select(
@@ -67,7 +67,31 @@ export default function LibraryPage() {
       if (libError) {
         console.error("Error loading library items:", libError);
       } else if (data) {
-        setItems(data as LibraryItem[]);
+        // Supabase često vrati perfumes kao ARRAY → uzmi prvi element
+        const normalized: LibraryItem[] = (data as any[]).map(row => {
+          const perfumesArray = row.perfumes as any;
+          const perfumesObj = Array.isArray(perfumesArray)
+            ? perfumesArray[0] ?? null
+            : perfumesArray ?? null;
+
+          return {
+            id: String(row.id),
+            created_at: String(row.created_at),
+            perfumes: perfumesObj
+              ? {
+                  id: String(perfumesObj.id),
+                  name: String(perfumesObj.name),
+                  house: perfumesObj.house ?? null,
+                  description: perfumesObj.description ?? null,
+                  image_url: perfumesObj.image_url ?? null,
+                  vibe_tags: (perfumesObj.vibe_tags ??
+                    null) as string[] | null
+                }
+              : null
+          };
+        });
+
+        setItems(normalized);
       }
 
       setLoading(false);
@@ -148,7 +172,7 @@ export default function LibraryPage() {
                   </h2>
                   {p.vibe_tags && (
                     <p className="text-[0.7rem] text-slate-400">
-                      {(p.vibe_tags as string[]).join(" • ")}
+                      {p.vibe_tags.join(" • ")}
                     </p>
                   )}
                   <p className="text-xs text-slate-400 mt-1 line-clamp-3">

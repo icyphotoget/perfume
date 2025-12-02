@@ -1,26 +1,26 @@
 // app/layout.tsx
 import "./globals.css";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { Metadata } from "next";
 import SmartHeader from "@/components/SmartHeader";
 
-export const metadata = {
-  title: "Parfemi",
-  description: "Perfume discovery platform",
+export const metadata: Metadata = {
+  title: "Parfemi — Niche Perfume Discovery",
+  description:
+    "Discover niche perfumes through aesthetics, seasons & feelings with AI-powered recommendations."
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // SERVER-SIDE SESSION — jedini ispravni način
-  const supabase = createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
+export default function RootLayout({
+  children
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
-      <body>
-        {/* Inject session to client via context */}
-        <SmartHeader serverSession={session} />
-        {children}
+      <body className="bg-ink text-slate-50">
+        {/* Global header (klijentska komponenta, sama rješava auth) */}
+        <SmartHeader />
+        {/* Mali padding da sadržaj ne ide ispod headera */}
+        <div className="pt-16">{children}</div>
       </body>
     </html>
   );

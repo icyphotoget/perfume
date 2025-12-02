@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -13,6 +13,30 @@ export default function LoginPage() {
   const [loadingEmail, setLoadingEmail] = useState(false);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [checkingSession, setCheckingSession] = useState(true);
+
+  // 🔁 Ako je user već logiran → automatski ga makni s /login
+  useEffect(() => {
+    const checkUser = async () => {
+      const {
+        data: { user },
+        error
+      } = await supabase.auth.getUser();
+
+      if (error) {
+        console.error("Error checking existing session:", error.message);
+      }
+
+      if (user) {
+        // već si logiran → vodi ga na library (ili home ako želiš)
+        router.replace("/profile/library");
+      } else {
+        setCheckingSession(false);
+      }
+    };
+
+    checkUser();
+  }, [supabase, router]);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +56,8 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/");
+    // nakon uspješnog logina → na library
+    router.push("/profile/library");
   };
 
   const handleGoogleLogin = async () => {
@@ -47,6 +72,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
+        // vrati se na home; od tamo te možeš kliknut na My Library
         redirectTo: `${origin}/`
       }
     });
@@ -57,8 +83,17 @@ export default function LoginPage() {
       console.error("Google login error:", error.message);
       setError("Google login failed, try again.");
     }
-    // Supabase sam radi redirect na Google i natrag
+    // Supabase radi redirect na Google i natrag, mi ovdje ne radimo push
   };
+
+  // dok provjeravamo jel već logiran → nemoj pokazivati formu da ne "blinka"
+  if (checkingSession) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-gradient-to-b from-black to-slate-950">
+        <p className="text-sm text-slate-400">Checking your session…</p>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-b from-black to-slate-950">

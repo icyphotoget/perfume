@@ -1,65 +1,62 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import SaveToLibraryModal from "./SaveToLibraryModal";
-import {
-  getCollectionsContainingPerfume,
-  isPerfumeInAnyCollection
-} from "@/lib/library";
+import { useState } from "react";
 
 type Props = {
   perfumeId: string;
-  perfumeName?: string;
-  className?: string;
+  perfumeName: string;
 };
 
-export default function SaveToLibraryButton({
-  perfumeId,
-  perfumeName,
-  className
-}: Props) {
-  const [open, setOpen] = useState(false);
+export default function SaveToLibraryButton({ perfumeId, perfumeName }: Props) {
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // only run on client
-    if (typeof window === "undefined") return;
-    setSaved(isPerfumeInAnyCollection(perfumeId));
-  }, [perfumeId]);
+  const handleClick = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/library", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ perfumeId })
+      });
 
-  // refresh saved state when modal closes
-  function handleClose() {
-    setOpen(false);
-    if (typeof window === "undefined") return;
-    setSaved(isPerfumeInAnyCollection(perfumeId));
-  }
-
-  const label = saved ? "Saved to Library" : "Save to Library";
+      if (res.status === 401) {
+        setError("Please log in to save perfumes to your library.");
+        setSaved(false);
+      } else if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setError(data?.error || "Something went wrong.");
+      } else {
+        setSaved(true);
+      }
+    } catch (e) {
+      setError("Network error.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <>
+    <div className="space-y-1">
       <button
-        onClick={() => setOpen(true)}
-        className={
-          className ??
-          `inline-flex items-center gap-2 rounded-3xl border px-4 py-2 text-xs md:text-sm transition
-          ${
-            saved
-              ? "border-amberLux bg-amberLux/10 text-amberLux"
-              : "border-slate-600 bg-black/40 text-slate-100 hover:border-amberLux hover:text-amberLux"
-          }`
-        }
+        type="button"
+        onClick={handleClick}
+        disabled={loading || saved}
+        className={`inline-flex items-center justify-center rounded-3xl px-4 py-2.5 text-xs font-medium border transition ${
+          saved
+            ? "border-emerald-500/70 text-emerald-400 bg-emerald-900/20"
+            : "border-slate-700 text-slate-200 hover:border-amberLux hover:text-amberLux bg-fog/40 backdrop-blur-xs"
+        } ${loading ? "opacity-70 cursor-wait" : ""}`}
       >
-        <span className="text-sm">{saved ? "★" : "☆"}</span>
-        <span>{label}</span>
+        {saved ? "Saved to your library" : `Save ${perfumeName} to library`}
       </button>
-
-      <SaveToLibraryModal
-        open={open}
-        onClose={handleClose}
-        perfumeId={perfumeId}
-        perfumeName={perfumeName}
-      />
-    </>
+      {error && (
+        <p className="text-[0.7rem] text-red-400">
+          {error}
+        </p>
+      )}
+    </div>
   );
 }

@@ -18,6 +18,7 @@ type RecommendedItem = {
   vibeTags: string[];
   vibeSentence: string;
   wearingScenario: string;
+  explanation?: string | null; // ⬅️ NEW (from AI)
 };
 
 type Props = {
@@ -99,11 +100,16 @@ export default function ResultsPageClient({ items }: Props) {
             </p>
 
             <p className="text-sm text-slate-300 italic mb-4">
-              On you, this reads like{" "}
-              <span className="text-amber-200">
-                {primary.vibeSentence}
-              </span>
-              .
+              {/* Prefer AI explanation, fallback to vibeSentence */}
+              {primary.explanation ?? (
+                <>
+                  On you, this reads like{" "}
+                  <span className="text-amber-200">
+                    {primary.vibeSentence}
+                  </span>
+                  .
+                </>
+              )}
             </p>
 
             <p className="text-xs text-slate-400 mb-4">
@@ -210,7 +216,7 @@ export default function ResultsPageClient({ items }: Props) {
                     {item.description}
                   </p>
                   <p className="text-xs text-slate-400 mb-3">
-                    {item.vibeSentence}
+                    {item.explanation ?? item.vibeSentence}
                   </p>
                   <div className="flex flex-wrap gap-1 mb-2">
                     {item.vibeTags.map(tag => (

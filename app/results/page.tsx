@@ -1,3 +1,5 @@
+// app/results/page.tsx
+
 import ResultsPageClient from "@/components/results-page-client";
 import { products } from "@/lib/data";
 
@@ -25,10 +27,13 @@ export default function ResultsPage() {
       description: p.description,
       score: scores[index] ?? 0.75,
       vibeTags: p.vibeTags,
-      vibeSentence: vibeSentences[index] ?? "a vibe-aligned extension of how you already move through the world.",
+      vibeSentence:
+        vibeSentences[index] ??
+        "a vibe-aligned extension of how you already move through the world.",
       wearingScenario:
         scenarios[index] ??
-        "moments where you want to be quietly noticed rather than loudly announced."
+        "moments where you want to be quietly noticed rather than loudly announced.",
+      explanation: null // ⬅️ placeholder until you pass real AI explanations
     };
   });
 

@@ -3,7 +3,7 @@
 import { motion, useScroll, useTransform, useInView } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import type { Product } from "@/app/page";
+import type { Product } from "@/lib/data";
 
 type SlideProps = {
   index: number;

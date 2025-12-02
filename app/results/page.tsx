@@ -1,41 +1,90 @@
 // app/results/page.tsx
 
 import ResultsPageClient from "@/components/results-page-client";
-import { products } from "@/lib/data";
 
-export default function ResultsPage() {
-  // For now, mock: take first 3 products from lib/data
-  const base = products.slice(0, 3);
+type ResultsPageProps = {
+  searchParams: {
+    answers?: string;
+    vibes?: string;
+    limit?: string;
+  };
+};
 
-  const items = base.map((p, index) => {
-    const scores = [0.93, 0.86, 0.79]; // mock scores
-    const vibeSentences = [
-      "a smoky, intimate aura that wraps around you like velvet in a low-lit room",
-      "a romantic, wine-stained blush of florals and late-night city lights",
-      "a soft, cashmere-hug of quiet luxury and understated comfort"
-    ];
-    const scenarios = [
-      "slow, late-night conversations, small gatherings, and evenings where you want to feel cinematic without shouting",
-      "dates that feel slightly dangerous in the best way, rooftop bars, and slow walks home through glowing streets",
-      "weekend coffee runs, museum afternoons and those days where you want to feel expensive but relaxed"
-    ];
+export default async function ResultsPage({ searchParams }: ResultsPageProps) {
+  // 1) Parse answers from query string (JSON-encoded array)
+  let answers: string[] = [];
+  if (searchParams.answers) {
+    try {
+      const parsed = JSON.parse(searchParams.answers);
+      if (Array.isArray(parsed)) {
+        answers = parsed.filter(Boolean);
+      }
+    } catch {
+      // ignore parse errors, keep empty
+    }
+  }
 
-    return {
-      id: p.id,
-      name: p.name,
-      house: p.house,
-      description: p.description,
-      score: scores[index] ?? 0.75,
-      vibeTags: p.vibeTags,
+  // 2) Parse selected vibes from query string ("a,b,c")
+  const selectedVibes =
+    searchParams.vibes
+      ?.split(",")
+      .map(v => v.trim())
+      .filter(Boolean) ?? [];
+
+  const limit = searchParams.limit ? Number(searchParams.limit) || 3 : 3;
+
+  // 3) Call your AI recommendation API
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/api/recommend`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      // If both arrays are empty, the API will return 400,
+      // so we provide a fallback demo payload:
+      body: JSON.stringify(
+        answers.length > 0 || selectedVibes.length > 0
+          ? { answers, selectedVibes, limit }
+          : {
+              answers: [
+                "I like dark, moody, evening scents with velvet and smoke.",
+                "I read books alone when it rains."
+              ],
+              selectedVibes: ["moody-introvert"],
+              limit
+            }
+      ),
+      cache: "no-store"
+    }
+  );
+
+  if (!res.ok) {
+    // In case of error, you can choose to render some fallback UI
+    // For now, just show an empty state to the client component
+    console.error("Failed to fetch recommendations:", await res.text());
+    return <ResultsPageClient items={[]} />;
+  }
+
+  const data = await res.json();
+
+  // 4) Map API results into items expected by ResultsPageClient
+  const items =
+    (data.results ?? []).map((r: any) => ({
+      id: r.product.id,
+      name: r.product.name,
+      house: r.product.house,
+      description: r.product.description,
+      score: r.score ?? 0.75,
+      vibeTags: r.product.vibeTags ?? [],
+      // If AI explanation exists, use it. Otherwise build a generic vibe sentence.
       vibeSentence:
-        vibeSentences[index] ??
+        r.explanation ??
         "a vibe-aligned extension of how you already move through the world.",
       wearingScenario:
-        scenarios[index] ??
         "moments where you want to be quietly noticed rather than loudly announced.",
-      explanation: null // ⬅️ placeholder until you pass real AI explanations
-    };
-  });
+      explanation: r.explanation ?? null
+    })) ?? [];
 
   return <ResultsPageClient items={items} />;
 }

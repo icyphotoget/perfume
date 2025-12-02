@@ -15,20 +15,38 @@ const baseVariants = {
 
 export default function QuizPage() {
   const [index, setIndex] = useState(0);
+  const [answers, setAnswers] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const total = quizQuestions.length;
   const router = useRouter();
 
-  const handleOptionClick = () => {
+  const handleOptionClick = (option: string) => {
+    // 1) Update answers for current question
+    const nextAnswers = [...answers];
+    nextAnswers[index] = option;
+    setAnswers(nextAnswers);
+
+    // 2) If there are more questions, go to the next one
     if (index < total - 1) {
       setIndex(prev => prev + 1);
-    } else {
-      // Last question → fake loading + redirect to results
-      setIsSubmitting(true);
-      setTimeout(() => {
-        router.push("/results");
-      }, 1000); // kasnije može biti realan vrijeme API poziva
+      return;
     }
+
+    // 3) Last question → show skeleton + redirect to /results with answers in URL
+    setIsSubmitting(true);
+
+    const params = new URLSearchParams();
+    if (nextAnswers.length > 0) {
+      params.set("answers", JSON.stringify(nextAnswers));
+    }
+    // You can later add vibes like:
+    // params.set("vibes", selectedVibes.join(","));
+    params.set("limit", "3");
+
+    // Fake a short delay to let the skeleton show
+    setTimeout(() => {
+      router.push(`/results?${params.toString()}`);
+    }, 800);
   };
 
   return (
@@ -105,7 +123,7 @@ export default function QuizPage() {
                     key={option}
                     whileTap={{ scale: 0.97 }}
                     disabled={isSubmitting}
-                    onClick={handleOptionClick}
+                    onClick={() => handleOptionClick(option)}
                     className="rounded-2xl bg-slate-900/70 border border-slate-700 px-4 py-3 text-left text-sm text-slate-200 hover:border-amberLux hover:text-amberLux transition disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {option}

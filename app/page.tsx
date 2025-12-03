@@ -1,15 +1,13 @@
 // app/page.tsx
-import HomePageClient from "@/components/HomePageClient";
-import { getAllPerfumes } from "@/lib/perfumes";
-import { products as staticProducts } from "@/lib/data";
+import SmartHeader from "@/components/SmartHeader";
+import PerfumeStories from "@/components/PerfumeStories";
 
-export default async function HomePage() {
-  // probaj iz Supabasea
-  const perfumesFromDb = await getAllPerfumes();
-
-  // ako je baza prazna ili error -> fallback na staticProducts
-  const productsToUse =
-    perfumesFromDb.length > 0 ? perfumesFromDb : staticProducts;
-
-  return <HomePageClient products={productsToUse} />;
+export default function Page() {
+  return (
+    <main className="min-h-screen bg-black text-slate-50">
+      <SmartHeader />
+      {/* Height minus header (assumed ~64px). Adjust if yours is taller/shorter. */}
+      <PerfumeStories />
+    </main>
+  );
 }

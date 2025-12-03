@@ -2,274 +2,223 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { usePathname, useRouter } from "next/navigation";
 
 type AuthStatus = "loading" | "guest" | "user";
 
 export default function SmartHeader() {
   const [hidden, setHidden] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
+
   const pathname = usePathname();
   const router = useRouter();
 
-  // scroll hide/show
+  /* Hide/show on scroll */
   useEffect(() => {
-    let lastScroll = 0;
+    let last = 0;
     let timeout: any;
 
-    const handleScroll = () => {
-      const current = window.scrollY;
-
-      if (current > lastScroll && current > 50) {
-        setHidden(true);
-      } else {
-        setHidden(false);
-      }
-
-      lastScroll = current;
+    const onScroll = () => {
+      const cur = window.scrollY;
+      if (cur > last && cur > 50) setHidden(true);
+      else setHidden(false);
+      last = cur;
 
       clearTimeout(timeout);
       timeout = setTimeout(() => setHidden(false), 200);
     };
 
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // provjera usera
-  useEffect(() => {
-    let canceled = false;
+  /* Close menu on navigation */
+  useEffect(() => setMenuOpen(false), [pathname]);
 
-    const checkAuth = async () => {
+  /* Get auth status */
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
       try {
-        const res = await fetch("/api/auth/user", {
-          method: "GET",
+        const r = await fetch("/api/auth/user", {
           credentials: "include"
         });
-
-        if (!canceled) {
-          if (res.ok) {
-            setAuthStatus("user");
-          } else {
-            setAuthStatus("guest");
-          }
-        }
+        if (!cancelled) setAuthStatus(r.ok ? "user" : "guest");
       } catch {
-        if (!canceled) setAuthStatus("guest");
+        if (!cancelled) setAuthStatus("guest");
       }
-    };
+    })();
 
-    checkAuth();
-
-    return () => {
-      canceled = true;
-    };
+    return () => (cancelled = true);
   }, [pathname]);
 
-  const isActive = (href: string) => {
-    if (href === "/") return pathname === "/";
-    return pathname.startsWith(href);
+  const logout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    } catch {}
+    router.push("/");
+    router.refresh();
   };
 
-  const handleLogout = async () => {
-    try {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include"
-      });
-    } catch (e) {
-      // ignore
-    } finally {
-      router.push("/");
-      router.refresh();
-    }
-  };
+  const isActive = (href: string) =>
+    href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
     <motion.header
       animate={hidden ? { y: -80, opacity: 0 } : { y: 0, opacity: 1 }}
-      transition={{ duration: 0.35, ease: "easeOut" }}
-      className="fixed top-0 left-0 right-0 z-50 bg-ink/80 backdrop-blur-xl border-b border-slate-800/60"
+      transition={{ duration: 0.35 }}
+      className="fixed inset-x-0 top-0 z-50 pointer-events-none"
     >
-      <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col gap-2">
-        {/* TOP ROW: logo + actions */}
-        <div className="flex items-center justify-between gap-3">
-          {/* LEFT: Logo + dynamic scene subtitle */}
+      <div className="mx-auto mt-3 max-w-6xl px-4 pointer-events-auto">
+        <div className="
+          flex h-12 items-center justify-between 
+          rounded-full bg-black/40 backdrop-blur-2xl 
+          shadow-[0_10px_50px_rgba(0,0,0,0.7)] 
+          px-5
+        ">
+          {/* LEFT — LOGO */}
           <Link href="/" className="flex items-center gap-3">
-            <div className="h-7 w-7 rounded-full bg-amberLux shadow-md" />
-            <div className="flex flex-col">
-              <span className="tracking-[0.25em] text-[0.7rem] text-slate-200 uppercase">
-                PARFEMI
-              </span>
-              <span
-                id="sceneSubtitle"
-                className="text-[0.7rem] text-slate-500 mt-0.5 transition-opacity duration-300 line-clamp-1"
-              >
-                Welcome · Front Page
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-amberLux shadow-[0_0_15px_rgba(245,197,120,0.9)]">
+              <span className="font-body text-[0.7rem] font-semibold tracking-[0.18em] text-ink">
+                P
               </span>
             </div>
+            <span className="font-body text-[0.65rem] uppercase tracking-[0.28em] text-slate-100">
+              Parfemi
+            </span>
           </Link>
 
-          {/* RIGHT: main actions (desktop) */}
-          <nav className="hidden md:flex items-center gap-6 text-[0.7rem] uppercase text-slate-400">
-            <Link
-              href="/"
-              className={`hover:text-amberLux transition ${
-                isActive("/") ? "text-amberLux" : ""
-              }`}
-            >
-              Home
-            </Link>
-            <Link
-              href="/profile/library"
-              className={`hover:text-amberLux transition ${
-                isActive("/profile/library") ? "text-amberLux" : ""
-              }`}
-            >
-              My Library
-            </Link>
-            <Link
-              href="/quiz"
-              className={`hover:text-amberLux transition ${
-                isActive("/quiz") ? "text-amberLux" : ""
-              }`}
-            >
-              AI Scent Stylist
-            </Link>
-
-            {/* CONDITIONAL: Log in vs Profile/Logout */}
-            {authStatus === "user" ? (
-              <>
-                <Link
-                  href="/profile"
-                  className={`hover:text-amberLux transition ${
-                    isActive("/profile") ? "text-amberLux" : ""
-                  }`}
-                >
-                  Profile
-                </Link>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="hover:text-amberLux transition text-slate-400"
-                >
-                  Logout
-                </button>
-              </>
-            ) : (
-              <Link
-                href="/login"
-                className={`hover:text-amberLux transition ${
-                  isActive("/login") ? "text-amberLux" : ""
-                }`}
-              >
-                Log in
-              </Link>
-            )}
-          </nav>
-
-          {/* RIGHT: compact actions (mobile) */}
-          <nav className="flex md:hidden items-center gap-2 text-[0.7rem] text-slate-300">
-            <Link
-              href="/quiz"
-              className={`px-2 py-1 rounded-2xl border border-slate-700/80 bg-black/40 hover:border-amberLux hover:text-amberLux transition ${
-                isActive("/quiz") ? "border-amberLux text-amberLux" : ""
-              }`}
-            >
-              AI
-            </Link>
-            <Link
-              href="/profile/library"
-              className={`px-2 py-1 rounded-2xl border border-slate-700/80 bg-black/40 hover:border-amberLux hover:text-amberLux transition ${
-                isActive("/profile/library")
-                  ? "border-amberLux text-amberLux"
-                  : ""
-              }`}
-            >
-              Lib
-            </Link>
-
-            {authStatus === "user" ? (
-              <>
-                <Link
-                  href="/profile"
-                  className={`px-2 py-1 rounded-2xl border border-slate-700/80 bg-black/40 hover:border-amberLux hover:text-amberLux transition ${
-                    isActive("/profile") ? "border-amberLux text-amberLux" : ""
-                  }`}
-                >
-                  Me
-                </Link>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="px-2 py-1 rounded-2xl border border-slate-700/80 bg-black/40 hover:border-red-500 hover:text-red-300 transition"
-                >
-                  Out
-                </button>
-              </>
-            ) : (
-              <Link
-                href="/login"
-                className={`px-2 py-1 rounded-2xl border border-slate-700/80 bg-black/40 hover:border-amberLux hover:text-amberLux transition ${
-                  isActive("/login") ? "border-amberLux text-amberLux" : ""
-                }`}
-              >
-                Log in
-              </Link>
-            )}
-          </nav>
-        </div>
-
-        {/* BOTTOM ROW: vibe segmented control */}
-        <div className="flex items-center justify-center">
-          <div className="inline-flex w-full md:w-auto items-center gap-1 rounded-3xl bg-black/40 border border-slate-800/70 px-1 py-1 overflow-x-auto no-scrollbar">
-            <Link
-              href="/aesthetic"
-              className={`text-[0.7rem] md:text-xs px-3 py-1.5 rounded-2xl whitespace-nowrap transition ${
-                isActive("/aesthetic")
-                  ? "bg-amberLux text-ink"
-                  : "text-slate-300 hover:text-amberLux hover:bg-slate-900/60"
-              }`}
-            >
-              Aesthetic sections
-            </Link>
-
-            <Link
-              href="/seasonal"
-              className={`text-[0.7rem] md:text-xs px-3 py-1.5 rounded-2xl whitespace-nowrap transition ${
-                isActive("/seasonal")
-                  ? "bg-amberLux text-ink"
-                  : "text-slate-300 hover:text-amberLux hover:bg-slate-900/60"
-              }`}
-            >
-              Seasonal vibes
-            </Link>
-
-            <Link
-              href="/feels"
-              className={`text-[0.7rem] md:text-xs px-3 py-1.5 rounded-2xl whitespace-nowrap transition ${
-                isActive("/feels")
-                  ? "bg-amberLux text-ink"
-                  : "text-slate-300 hover:text-amberLux hover:bg-slate-900/60"
-              }`}
-            >
-              In my feels / mood
-            </Link>
-
-            <Link
-              href="/take-me"
-              className={`text-[0.7rem] md:text-xs px-3 py-1.5 rounded-2xl whitespace-nowrap transition ${
-                isActive("/take-me")
-                  ? "bg-amberLux text-ink"
-                  : "text-slate-300 hover:text-amberLux hover:bg-slate-900/60"
-              }`}
-            >
+          {/* CENTER — Main nav */}
+          <nav className="hidden md:flex items-center gap-6">
+            <CenterLink href="/aesthetic" active={isActive("/aesthetic")}>
+              Aesthetic
+            </CenterLink>
+            <CenterLink href="/seasonal" active={isActive("/seasonal")}>
+              Seasonal
+            </CenterLink>
+            <CenterLink href="/feels" active={isActive("/feels")}>
+              Feels
+            </CenterLink>
+            <CenterLink href="/take-me" active={isActive("/take-me")}>
               Take me to…
-            </Link>
-          </div>
+            </CenterLink>
+          </nav>
+
+          {/* RIGHT — MENU button */}
+          <button
+            onClick={() => setMenuOpen((p) => !p)}
+            className="
+              group flex h-9 w-9 items-center justify-center 
+              rounded-full bg-black/40 
+              text-slate-200 hover:text-amberLux 
+              shadow-[0_8px_30px_rgba(0,0,0,0.6)]
+            "
+          >
+            <span className="relative flex h-3 w-4 flex-col justify-between">
+              <span className="h-[1px] w-full bg-current" />
+              <span className="h-[1px] w-3/4 self-end bg-current opacity-80" />
+            </span>
+          </button>
+
+          {/* DROPDOWN PANEL */}
+          <AnimatePresence>
+            {menuOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 10 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.18 }}
+                className="
+                  absolute right-4 top-14 w-60 rounded-3xl 
+                  bg-black/85 backdrop-blur-2xl 
+                  shadow-[0_20px_60px_rgba(0,0,0,0.9)] 
+                  border border-white/5 p-4
+                "
+              >
+                <DropdownLink href="/" active={isActive("/")}>
+                  Home
+                </DropdownLink>
+
+                <DropdownLink href="/profile/library" active={isActive("/profile/library")}>
+                  My Library
+                </DropdownLink>
+
+                <DropdownLink href="/quiz" active={isActive("/quiz")}>
+                  AI Scent Stylist
+                </DropdownLink>
+
+                <DropdownLink href="/results" active={isActive("/results")}>
+                  Sample Results
+                </DropdownLink>
+
+                <div className="my-3 h-px bg-white/10"></div>
+
+                {authStatus === "user" ? (
+                  <>
+                    <DropdownLink href="/profile" active={isActive("/profile")}>
+                      Profile
+                    </DropdownLink>
+
+                    <button
+                      onClick={logout}
+                      className="
+                        mt-2 w-full rounded-full border border-red-400/50 
+                        px-3 py-1 text-[0.7rem] 
+                        font-body uppercase tracking-[0.22em] 
+                        text-red-200 hover:bg-red-500/10
+                      "
+                    >
+                      Logout
+                    </button>
+                  </>
+                ) : (
+                  <DropdownLink href="/login" active={isActive("/login")}>
+                    Log in
+                  </DropdownLink>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </motion.header>
+  );
+}
+
+/* CENTER NAV BUTTON */
+function CenterLink({ href, active, children }: any) {
+  return (
+    <Link
+      href={href}
+      className={`
+        font-body text-[0.65rem] uppercase tracking-[0.22em] transition 
+        ${active ? "text-amberLux" : "text-slate-300 hover:text-amberLux"}
+      `}
+    >
+      {children}
+    </Link>
+  );
+}
+
+/* DROPDOWN ITEM */
+function DropdownLink({ href, active, children }: any) {
+  return (
+    <Link
+      href={href}
+      className={`
+        block rounded-xl px-3 py-2 
+        font-body text-[0.7rem] uppercase tracking-[0.22em] transition
+        ${
+          active
+            ? "bg-amberLux/90 text-ink"
+            : "text-slate-200 hover:bg-slate-900/60 hover:text-amberLux"
+        }
+      `}
+    >
+      {children}
+    </Link>
   );
 }

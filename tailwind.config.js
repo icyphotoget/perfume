@@ -22,6 +22,12 @@ module.exports = {
       },
       backdropBlur: {
         xs: "2px"
+      },
+
+      /* ⭐️ ADD THIS ⭐️ */
+      fontFamily: {
+        title: "var(--font-garamond)",
+        body: "var(--font-inter)"
       }
     }
   },

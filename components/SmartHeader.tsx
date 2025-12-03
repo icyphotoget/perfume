@@ -52,7 +52,9 @@ export default function SmartHeader() {
       }
     })();
 
-    return () => (cancelled = true);
+    return () => {
+      cancelled = true;
+    };
   }, [pathname]);
 
   const logout = async () => {
